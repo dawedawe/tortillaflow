@@ -87,27 +87,59 @@ module View =
     open Feliz.Bulma
     open Model
 
+    let button (text: string) m dispatch =
+        Bulma.button.button [ prop.text text; prop.onClick (fun _ -> m |> dispatch) ]
+
+    let result comida =
+        Bulma.textarea [ prop.value $"{string comida}!!!\nBuen provecho :)" ]
+
+    let (|ConditionChoiceNeeded|_|) (model, dispatch) =
+        if Option.isNone model.Condition then
+            [ button "go with a soft tortilla" (ChooseCondition Soft) dispatch
+              button "go with a crunchy tortilla" (ChooseCondition Crunchy) dispatch ]
+            |> Fable.React.Helpers.ofList
+            |> Some
+        else
+            None
+
+    let (|SizeAndShapeChoiceNeeded|_|) (model, dispatch) =
+        match (model.Condition, model.SizeAndShape) with
+        | (Some Crunchy, None) ->
+            [ button "small triangles, ovals or rectangles" (ChooseSizeAndShap SmallTrianglesOvalsOrRectangles) dispatch
+              button "But I can't tell, it's all rolled up!" (ChooseSizeAndShap RolledUp) dispatch
+              button "The size of someone's hand I guess." (ChooseSizeAndShap Handsized) dispatch ]
+            |> Fable.React.Helpers.ofList
+            |> Some
+        | _ -> None
+
+    let (|ItsNachos|_|) model =
+        match model.Condition, model.SizeAndShape with
+        | Some Crunchy, Some SmallTrianglesOvalsOrRectangles -> result Nachos |> Some
+        | _ -> None
+
+    let (|ItsTaquito|_|) model =
+        match model.Condition, model.SizeAndShape with
+        | Some Crunchy, Some RolledUp -> result Taquito |> Some
+        | _ -> None
+
     let view model dispatch =
 
         let description = string model.Condition + "\n" + string model.SizeAndShape
 
         [ Bulma.textarea [ prop.value description ]
 
-          Bulma.button.button
-              [ prop.text "go with a soft tortilla"
-                prop.onClick (fun _ -> Msg.ChooseCondition Condition.Soft |> dispatch) ]
-          Bulma.button.button
-              [ prop.text "go with a crunchy tortilla"
-                prop.onClick (fun _ -> Msg.ChooseCondition Condition.Crunchy |> dispatch) ]
-          Bulma.button.button
-              [ prop.text "small triangles, ovals or rectangles"
-                prop.onClick (fun _ -> Msg.ChooseSizeAndShap SizeAndShape.SmallTrianglesOvalsOrRectangles |> dispatch) ]
-          Bulma.button.button
-              [ prop.text "handsized"
-                prop.onClick (fun _ -> Msg.ChooseSizeAndShap SizeAndShape.Handsized |> dispatch) ]
-          Bulma.button.button
-              [ prop.text "rolled up"
-                prop.onClick (fun _ -> Msg.ChooseSizeAndShap SizeAndShape.RolledUp |> dispatch) ] ]
+          match (model, dispatch) with
+          | ConditionChoiceNeeded buttons -> buttons
+          | _ -> ()
+
+          match (model, dispatch) with
+          | SizeAndShapeChoiceNeeded buttons -> buttons
+          | _ -> ()
+
+          match model with
+          | ItsNachos n -> n
+          | ItsTaquito n -> n
+          | _ -> () ]
         |> Fable.React.Helpers.ofList
 
 open State
