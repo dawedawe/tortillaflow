@@ -44,8 +44,14 @@ module Model =
         | Burito
         | Chimichanga
 
+    type Question =
+        | WhatCondition
+        | WhatSizeAndShape
+        | IsMeatInside
+
     type Model =
-        { Condition: Condition option
+        { NextQuestion: Question option
+          Condition: Condition option
           Folding: Folding option
           Fried: Fried option
           FillingOrSurrounding: FillingOrSurrounding option
@@ -55,14 +61,62 @@ module Model =
     type Msg =
         | ChooseCondition of Condition
         | ChooseSizeAndShap of SizeAndShape
+        | ChooseIsMeatInside of bool
+        | Restart
 
 module State =
 
     open Model
 
+    let (|ConditionChoiceNeeded|_|) model =
+        match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
+        | (None, None, None, None, None) -> Some WhatCondition
+        | _ -> None
+
+    let (|SizeAndShapeChoiceNeeded|_|) model =
+        match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
+        | (Some Crunchy, None, None, None, None) -> Some WhatSizeAndShape
+        | _ -> None
+
+    let (|IsMeatInsideChoiceNeeded|_|) model =
+        match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
+        | (Some Crunchy, Some Handsized, None, None, None) -> Some IsMeatInside
+        | _ -> None
+
+    let decideNextQuestion model =
+        match model with
+        | ConditionChoiceNeeded q -> Some q
+        | SizeAndShapeChoiceNeeded q -> Some q
+        | IsMeatInsideChoiceNeeded q -> Some q
+        | _ -> None
+
+    let (|ItsNachos|_|) model =
+        match model.Condition, model.SizeAndShape with
+        | Some Crunchy, Some SmallTrianglesOvalsOrRectangles -> Some Nachos
+        | _ -> None
+
+    let (|ItsTaquito|_|) model =
+        match model.Condition, model.SizeAndShape with
+        | Some Crunchy, Some RolledUp -> Some Taquito
+        | _ -> None
+
+    let (|ItsTaco|_|) model =
+        match model.Condition, model.SizeAndShape, model.FillingOrSurrounding with
+        | Some Crunchy, Some Handsized, Some Meat -> Some Taco
+        | Some Crunchy, Some Handsized, Some Empty -> Some EmptyTacoShellForParty
+        | _ -> None
+
+    let getComida model =
+        match model with
+        | ItsNachos x -> Some x
+        | ItsTaquito x -> Some x
+        | ItsTaco x -> Some x
+        | _ -> None
+
     let init () =
         let model =
-            { Condition = None
+            { NextQuestion = Some WhatCondition
+              Condition = None
               Folding = None
               Fried = None
               FillingOrSurrounding = None
@@ -75,10 +129,33 @@ module State =
         match msg with
         | ChooseCondition c ->
             let model' = { model with Condition = Some c }
-            (model', Cmd.none)
+
+            let model'' =
+                { model' with
+                    NextQuestion = decideNextQuestion model'
+                    Comida = getComida model' }
+
+            (model'', Cmd.none)
         | ChooseSizeAndShap s ->
             let model' = { model with SizeAndShape = Some s }
-            (model', Cmd.none)
+
+            let model'' =
+                { model' with
+                    NextQuestion = decideNextQuestion model'
+                    Comida = getComida model' }
+
+            (model'', Cmd.none)
+        | ChooseIsMeatInside b ->
+            let model' =
+                { model with FillingOrSurrounding = if b then Some Meat else Some Empty }
+
+            let model'' =
+                { model' with
+                    NextQuestion = decideNextQuestion model'
+                    Comida = getComida model' }
+
+            (model'', Cmd.none)
+        | Restart -> init ()
         | _ -> System.NotImplementedException() |> raise
 
 module View =
@@ -93,24 +170,21 @@ module View =
     let result comida =
         Bulma.textarea [ prop.value $"{string comida}!!!\nBuen provecho :)" ]
 
-    let (|ConditionChoiceNeeded|_|) (model, dispatch) =
-        if Option.isNone model.Condition then
-            [ button "go with a soft tortilla" (ChooseCondition Soft) dispatch
-              button "go with a crunchy tortilla" (ChooseCondition Crunchy) dispatch ]
-            |> Fable.React.Helpers.ofList
-            |> Some
-        else
-            None
+    let whatConditionButtons dispatch =
+        [ button "soft" (ChooseCondition Soft) dispatch
+          button "crunchy" (ChooseCondition Crunchy) dispatch ]
+        |> Fable.React.Helpers.ofList
 
-    let (|SizeAndShapeChoiceNeeded|_|) (model, dispatch) =
-        match (model.Condition, model.SizeAndShape) with
-        | (Some Crunchy, None) ->
-            [ button "small triangles, ovals or rectangles" (ChooseSizeAndShap SmallTrianglesOvalsOrRectangles) dispatch
-              button "But I can't tell, it's all rolled up!" (ChooseSizeAndShap RolledUp) dispatch
-              button "The size of someone's hand I guess." (ChooseSizeAndShap Handsized) dispatch ]
-            |> Fable.React.Helpers.ofList
-            |> Some
-        | _ -> None
+    let whatSizeAndShapeButtons dispatch =
+        [ button "small triangles, ovals or rectangles" (ChooseSizeAndShap SmallTrianglesOvalsOrRectangles) dispatch
+          button "But I can't tell, it's all rolled up!" (ChooseSizeAndShap RolledUp) dispatch
+          button "The size of someone's hand I guess." (ChooseSizeAndShap Handsized) dispatch ]
+        |> Fable.React.Helpers.ofList
+
+    let isMeatInsideButtons dispatch =
+        [ button "Darn tootin'! (Yes)" (ChooseIsMeatInside true) dispatch
+          button "No. It's empty." (ChooseIsMeatInside false) dispatch ]
+        |> Fable.React.Helpers.ofList
 
     let (|ItsNachos|_|) model =
         match model.Condition, model.SizeAndShape with
@@ -122,24 +196,33 @@ module View =
         | Some Crunchy, Some RolledUp -> result Taquito |> Some
         | _ -> None
 
+    let (|ItsTaco|_|) model =
+        match model.Condition, model.SizeAndShape, model.FillingOrSurrounding with
+        | Some Crunchy, Some Handsized, Some Meat -> result Taco |> Some
+        | Some Crunchy, Some Handsized, Some Empty -> result EmptyTacoShellForParty |> Some
+        | _ -> None
+
     let view model dispatch =
 
-        let description = string model.Condition + "\n" + string model.SizeAndShape
+        let description =
+            string model.Condition
+            + "\n"
+            + string model.SizeAndShape
+            + "\n"
+            + string model.FillingOrSurrounding
 
         [ Bulma.textarea [ prop.value description ]
 
-          match (model, dispatch) with
-          | ConditionChoiceNeeded buttons -> buttons
-          | _ -> ()
-
-          match (model, dispatch) with
-          | SizeAndShapeChoiceNeeded buttons -> buttons
-          | _ -> ()
-
-          match model with
-          | ItsNachos n -> n
-          | ItsTaquito n -> n
-          | _ -> () ]
+          if Option.isSome model.Comida then
+              result model.Comida
+          else
+              match model.NextQuestion with
+              | Some WhatCondition -> whatConditionButtons dispatch
+              | Some WhatSizeAndShape -> whatSizeAndShapeButtons dispatch
+              | Some IsMeatInside -> isMeatInsideButtons dispatch
+              | _ -> ()
+          Html.br []
+          button "Restart" Restart dispatch ]
         |> Fable.React.Helpers.ofList
 
 open State
