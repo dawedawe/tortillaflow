@@ -35,8 +35,7 @@ module Model =
         | Fajita
         | Enchilada
         | Quesadilla
-        | ChimiChanga
-        | Burito
+        | Burrito
         | Chimichanga
 
     type Question =
@@ -170,13 +169,13 @@ module State =
 
     let (|ItsBurito|_|) model =
         match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
-        | (Some Soft, None, Some false, [ Meat; Rice true ], None) -> Some Burito
+        | (Some Soft, None, Some false, [ Meat; Rice true ], None) -> Some Burrito
         | _ -> None
 
-    let (|ItsChimiChanga|_|) model =
+    let (|ItsChimichanga|_|) model =
         match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
-        | (Some Soft, None, Some true, [ Meat; Rice true ], None) -> Some ChimiChanga
-        | (Some Soft, Some Roundish, Some true, [ Meat; Rice false ], None) -> Some ChimiChanga
+        | (Some Soft, None, Some true, [ Meat; Rice true ], None) -> Some Chimichanga
+        | (Some Soft, Some Roundish, Some true, [ Meat; Rice false ], None) -> Some Chimichanga
         | _ -> None
 
     let (|ItsEnchilada|_|) model =
@@ -200,7 +199,7 @@ module State =
         | ItsTortillaSoup x -> Some x
         | ItsQuesadilla x -> Some x
         | ItsBurito x -> Some x
-        | ItsChimiChanga x -> Some x
+        | ItsChimichanga x -> Some x
         | ItsEnchilada x -> Some x
         | ItsFajita x -> Some x
         | _ -> None
@@ -317,21 +316,48 @@ module View =
 
     open Model
 
+    let comidaInfos comida =
+        match comida with
+        | Nachos ->
+            ("Nachos", "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Nachos1.jpg/1920px-Nachos1.jpg")
+        | Taquito -> ("Taquito", "https://upload.wikimedia.org/wikipedia/commons/8/8b/Flautas_guacamole_tortillas.jpg")
+        | Taco ->
+            ("Taco",
+             "https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/001_Tacos_de_carnitas%2C_carne_asada_y_al_pastor.jpg/1920px-001_Tacos_de_carnitas%2C_carne_asada_y_al_pastor.jpg")
+        | EmptyTacoShellForParty ->
+            ("Empty Taco Shells",
+             "https://media.istockphoto.com/photos/isolated-taco-shell-picture-id700209484?k=6&m=700209484&s=170667a&w=0&h=kus7mbbg-qZUT_nplZoqXhahc04kNhPq1SgAdLRifL0=")
+        | TortillaSoup ->
+            ("Tortilla Soup",
+             "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Tortilla_Soup.jpg/1920px-Tortilla_Soup.jpg")
+        | Fajita ->
+            ("Fajita",
+             "https://media.istockphoto.com/photos/chicken-fajitas-picture-id477724063?k=6&m=477724063&s=170667a&w=0&h=ah81Nbum22t41X3R_z_50EymCrOVl0YJzkkefDKO5W0=")
+        | Enchilada ->
+            ("Enchilada", "https://upload.wikimedia.org/wikipedia/commons/b/ba/Festival_de_la_Enchilada_59.jpg")
+        | Quesadilla ->
+            ("Quesadilla",
+             "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Quesadilla_2.jpg/1920px-Quesadilla_2.jpg")
+        | Burrito -> ("Burrito", "https://upload.wikimedia.org/wikipedia/commons/1/17/Shredded_pork_burrito.jpg")
+        | Chimichanga ->
+            ("Chimichanga",
+             "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Chimichangas.jpg/1920px-Chimichangas.jpg")
+
     let button (text: string) m dispatch =
         Bulma.button.button [ prop.text text; prop.onClick (fun _ -> m |> dispatch) ]
 
-    let result2 comida =
-        Html.div
-            [ prop.className "result"
-              prop.children [ Bulma.box [ Html.p $"{string comida}"; Html.p "Buen provecho :)" ] ] ]
-
     let result comida =
+        let (name, url) = comidaInfos comida
+
         Bulma.box
             [ prop.className "result"
               prop.children
-                  [ Html.p "You end up with:"
-                    Html.p [ prop.className "comida"; prop.text $"{string comida}" ]
-                    Html.p "Buen provecho :)" ] ]
+                  [ Bulma.columns
+                        [ Bulma.column
+                              [ Html.p "You end up with:"
+                                Html.p [ prop.className "comida"; prop.text name ]
+                                Html.p "Buen provecho :)" ]
+                          Bulma.column [ Html.img [ prop.src url ] ] ] ] ]
 
     let whatConditionButtons dispatch =
         [ Html.p "What is your tortilla like?"
@@ -422,9 +448,8 @@ module View =
               | Some HasStripsOfMeat -> hasStripsOfMeatButtons dispatch
               | Some HasSauceOnTop -> hasSauceOnTopButtons dispatch
               | None -> ()
-          
-          Bulma.box [ button "Restart" Restart dispatch ]
-        ]
+
+          Bulma.box [ button "Restart" Restart dispatch ] ]
         |> Html.div
 
 open Browser.Dom
