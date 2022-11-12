@@ -76,132 +76,72 @@ module State =
 
     open Model
 
-    let (|ConditionChoiceNeeded|_|) model =
+    let (|ConditionChoiceNeeded|SizeAndShapeChoiceNeeded|MeatInsideChoiceNeeded|NoQuestionLeft|) model =
         match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
-        | (None, None, [], None, None) -> Some WhatCondition
-        | _ -> None
+        | (None, None, [], None, None) -> ConditionChoiceNeeded
+        | (Some Crunchy, None, [], None, None) -> SizeAndShapeChoiceNeeded
+        | (Some Crunchy, Some Handsized, [], None, None) -> MeatInsideChoiceNeeded
+        | _ -> NoQuestionLeft
 
-    let (|SizeAndShapeChoiceNeeded|_|) model =
+    let (|WhatsInsideChoiceNeeded|AnyRiceChoiceNeeded|FriedChoiceNeeded|FoldingChoiceNeeded|StripsOfMeatChoiceNeeded|SauceChoiceNeeded|NoQuestionLeft|) model =
         match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
-        | (Some Crunchy, None, [], None, None) -> Some WhatSizeAndShape
-        | _ -> None
-
-    let (|MeatInsideChoiceNeeded|_|) model =
-        match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
-        | (Some Crunchy, Some Handsized, [], None, None) -> Some IsMeatInside
-        | _ -> None
-
-    let (|WhatsInsideChoiceNeeded|_|) model =
-        match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
-        | (Some Soft, None, [], None, None) -> Some WhatsInside
-        | _ -> None
-
-    let (|AnyRiceChoiceNeeded|_|) model =
-        match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
-        | (Some Soft, None, [ Meat ], None, None) -> Some AnyRice
-        | _ -> None
-
-    let (|FriedChoiceNeeded|_|) model =
-        match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
-        | (Some Soft, None, [ Meat; Rice true ], None, None) -> Some IsFried
-        | (Some Soft, None, [ Meat; Rice false ], Some Roundish, None) -> Some IsFried
-        | _ -> None
-
-    let (|FoldingChoiceNeeded|_|) model =
-        match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
-        | (Some Soft, None, [ Meat; Rice false ], None, None) -> Some WhatFolding
-        | _ -> None
-
-    let (|StripsOfMeatChoiceNeeded|_|) model =
-        match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
-        | (Some Soft, None, [ Meat; Rice false ], Some FlatFoldedInHalf, None) -> Some HasStripsOfMeat
-        | _ -> None
-
-    let (|SauceChoiceNeeded|_|) model =
-        match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
-        | (Some Soft, None, [ Meat; Rice false; StripsOfMeat true ], Some FlatFoldedInHalf, None) -> Some HasSauceOnTop
-        | _ -> None
+        | (Some Soft, None, [], None, None) -> WhatsInsideChoiceNeeded
+        | (Some Soft, None, [ Meat ], None, None) -> AnyRiceChoiceNeeded
+        | (Some Soft, None, [ Meat; Rice true ], None, None) -> FriedChoiceNeeded
+        | (Some Soft, None, [ Meat; Rice false ], Some Roundish, None) -> FriedChoiceNeeded
+        | (Some Soft, None, [ Meat; Rice false ], None, None) -> FoldingChoiceNeeded
+        | (Some Soft, None, [ Meat; Rice false ], Some FlatFoldedInHalf, None) -> StripsOfMeatChoiceNeeded
+        | (Some Soft, None, [ Meat; Rice false; StripsOfMeat true ], Some FlatFoldedInHalf, None) -> SauceChoiceNeeded
+        | _ -> NoQuestionLeft
 
     let decideNextQuestion model =
         match model with
-        | ConditionChoiceNeeded q -> Some q
-        | SizeAndShapeChoiceNeeded q -> Some q
-        | MeatInsideChoiceNeeded q -> Some q
-        | WhatsInsideChoiceNeeded q -> Some q
-        | AnyRiceChoiceNeeded q -> Some q
-        | FriedChoiceNeeded q -> Some q
-        | FoldingChoiceNeeded q -> Some q
-        | StripsOfMeatChoiceNeeded q -> Some q
-        | SauceChoiceNeeded q -> Some q
+        | ConditionChoiceNeeded -> Some WhatCondition
+        | SizeAndShapeChoiceNeeded -> Some WhatSizeAndShape
+        | MeatInsideChoiceNeeded -> Some IsMeatInside
+        | WhatsInsideChoiceNeeded -> Some WhatsInside
+        | AnyRiceChoiceNeeded -> Some AnyRice
+        | FriedChoiceNeeded -> Some IsFried
+        | FoldingChoiceNeeded -> Some WhatFolding
+        | StripsOfMeatChoiceNeeded -> Some HasStripsOfMeat
+        | SauceChoiceNeeded -> Some HasSauceOnTop
         | _ -> None
 
-    let (|ItsNachos|_|) model =
+    let (|ItsNachos|ItsTaquito|ItsTaco|ItsTacoShellsForParty|ItsNone|) model =
         match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
-        | (Some Crunchy, None, None, [], Some SmallTrianglesOvalsOrRectangles) -> Some Nachos
-        | _ -> None
+        | (Some Crunchy, None, None, [], Some SmallTrianglesOvalsOrRectangles) -> ItsNachos
+        | (Some Crunchy, None, None, [], Some RolledUp) -> ItsTaquito
+        | (Some Crunchy, None, None, [ Meat ], Some Handsized) -> ItsTaco
+        | (Some Soft, Some Roundish, Some false, [ Meat; Rice false ], _) -> ItsTaco
+        | (Some Soft, Some FlatFoldedInHalf, None, [ Meat; Rice false; StripsOfMeat false ], _) -> ItsTaco
+        | (Some Crunchy, None, None, [ Empty ], Some Handsized) -> ItsTacoShellsForParty
+        | _ -> ItsNone
 
-    let (|ItsTaquito|_|) model =
+    let (|ItsTortillaSoup|ItsQuesadilla|ItsBurrito|ItsChimichanga|ItsEnchilada|ItsFajita|ItsNone|) model =
         match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
-        | (Some Crunchy, None, None, [], Some RolledUp) -> Some Taquito
-        | _ -> None
-
-    let (|ItsTaco|_|) model =
-        match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
-        | (Some Crunchy, None, None, [ Meat ], Some Handsized) -> Some Taco
-        | (Some Soft, Some Roundish, Some false, [ Meat; Rice false ], _) -> Some Taco
-        | (Some Soft, Some FlatFoldedInHalf, None, [ Meat; Rice false; StripsOfMeat false ], _) -> Some Taco
-        | _ -> None
-
-    let (|ItsTacoShellsForParty|_|) model =
-        match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
-        | (Some Crunchy, None, None, [ Empty ], Some Handsized) -> Some EmptyTacoShellForParty
-        | _ -> None
-
-    let (|ItsTortillaSoup|_|) model =
-        match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
-        | (Some Soft, None, None, [ Soup ], None) -> Some TortillaSoup
-        | _ -> None
-
-    let (|ItsQuesadilla|_|) model =
-        match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
-        | (Some Soft, None, None, [ Cheese ], None) -> Some Quesadilla
-        | _ -> None
-
-    let (|ItsBurito|_|) model =
-        match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
-        | (Some Soft, None, Some false, [ Meat; Rice true ], None) -> Some Burrito
-        | _ -> None
-
-    let (|ItsChimichanga|_|) model =
-        match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
-        | (Some Soft, None, Some true, [ Meat; Rice true ], None) -> Some Chimichanga
-        | (Some Soft, Some Roundish, Some true, [ Meat; Rice false ], None) -> Some Chimichanga
-        | _ -> None
-
-    let (|ItsEnchilada|_|) model =
-        match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
+        | (Some Soft, None, None, [ Soup ], None) -> ItsTortillaSoup
+        | (Some Soft, None, None, [ Cheese ], None) -> ItsQuesadilla
+        | (Some Soft, None, Some false, [ Meat; Rice true ], None) -> ItsBurrito
+        | (Some Soft, None, Some true, [ Meat; Rice true ], None) -> ItsChimichanga
+        | (Some Soft, Some Roundish, Some true, [ Meat; Rice false ], None) -> ItsChimichanga
         | (Some Soft, Some FlatFoldedInHalf, None, [ Meat; Rice false; StripsOfMeat true; SauceOnTop true ], None) ->
-            Some Enchilada
-        | _ -> None
-
-    let (|ItsFajita|_|) model =
-        match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
+            ItsEnchilada
         | (Some Soft, Some FlatFoldedInHalf, None, [ Meat; Rice false; StripsOfMeat true; SauceOnTop false ], None) ->
-            Some Fajita
-        | _ -> None
+            ItsFajita
+        | _ -> ItsNone
 
     let getComida model =
         match model with
-        | ItsNachos x -> Some x
-        | ItsTaquito x -> Some x
-        | ItsTaco x -> Some x
-        | ItsTacoShellsForParty x -> Some x
-        | ItsTortillaSoup x -> Some x
-        | ItsQuesadilla x -> Some x
-        | ItsBurito x -> Some x
-        | ItsChimichanga x -> Some x
-        | ItsEnchilada x -> Some x
-        | ItsFajita x -> Some x
+        | ItsNachos -> Some Nachos
+        | ItsTaquito -> Some Taquito
+        | ItsTaco -> Some Taco
+        | ItsTacoShellsForParty -> Some EmptyTacoShellForParty
+        | ItsTortillaSoup -> Some TortillaSoup
+        | ItsQuesadilla -> Some Quesadilla
+        | ItsBurrito -> Some Burrito
+        | ItsChimichanga -> Some Chimichanga
+        | ItsEnchilada -> Some Enchilada
+        | ItsFajita -> Some Fajita
         | _ -> None
 
     let init () =
