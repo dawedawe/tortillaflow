@@ -11,9 +11,11 @@ module Model =
     type FillingOrSurrounding =
         | Empty
         | Meat
+        | StripsOfMeat of bool
         | Cheese
-        | Rice
+        | Rice of bool
         | Soup
+        | SauceOnTop of bool
 
     type SizeAndShape =
         | SmallTrianglesOvalsOrRectangles
@@ -42,13 +44,18 @@ module Model =
         | WhatSizeAndShape
         | IsMeatInside
         | WhatsInside
+        | AnyRice
+        | IsFried
+        | WhatFolding
+        | HasStripsOfMeat
+        | HasSauceOnTop
 
     type Model =
         { NextQuestion: Question option
           Condition: Condition option
           Folding: Folding option
           Fried: Fried option
-          FillingOrSurrounding: FillingOrSurrounding option
+          FillingOrSurrounding: FillingOrSurrounding List
           SizeAndShape: SizeAndShape option
           Comida: Comida option }
 
@@ -57,6 +64,11 @@ module Model =
         | ChooseSizeAndShap of SizeAndShape
         | ChooseIsMeatInside of bool
         | ChooseWhatsInside of FillingOrSurrounding
+        | ChooseAnyRice of bool
+        | ChooseIsFried of bool
+        | ChooseFolding of Folding
+        | ChooseHasStripsOfMeat of bool
+        | ChooseSauceOnTop of bool
         | Restart
 
 module State =
@@ -67,22 +79,48 @@ module State =
 
     let (|ConditionChoiceNeeded|_|) model =
         match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
-        | (None, None, None, None, None) -> Some WhatCondition
+        | (None, None, [], None, None) -> Some WhatCondition
         | _ -> None
 
     let (|SizeAndShapeChoiceNeeded|_|) model =
         match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
-        | (Some Crunchy, None, None, None, None) -> Some WhatSizeAndShape
+        | (Some Crunchy, None, [], None, None) -> Some WhatSizeAndShape
         | _ -> None
 
     let (|MeatInsideChoiceNeeded|_|) model =
         match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
-        | (Some Crunchy, Some Handsized, None, None, None) -> Some IsMeatInside
+        | (Some Crunchy, Some Handsized, [], None, None) -> Some IsMeatInside
         | _ -> None
 
     let (|WhatsInsideChoiceNeeded|_|) model =
         match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
-        | (Some Soft, None, None, None, None) -> Some WhatsInside
+        | (Some Soft, None, [], None, None) -> Some WhatsInside
+        | _ -> None
+
+    let (|AnyRiceChoiceNeeded|_|) model =
+        match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
+        | (Some Soft, None, [ Meat ], None, None) -> Some AnyRice
+        | _ -> None
+
+    let (|FriedChoiceNeeded|_|) model =
+        match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
+        | (Some Soft, None, [ Meat; Rice true ], None, None) -> Some IsFried
+        | (Some Soft, None, [ Meat; Rice false ], Some Roundish, None) -> Some IsFried
+        | _ -> None
+
+    let (|FoldingChoiceNeeded|_|) model =
+        match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
+        | (Some Soft, None, [ Meat; Rice false ], None, None) -> Some WhatFolding
+        | _ -> None
+
+    let (|StripsOfMeatChoiceNeeded|_|) model =
+        match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
+        | (Some Soft, None, [ Meat; Rice false ], Some FlatFoldedInHalf, None) -> Some HasStripsOfMeat
+        | _ -> None
+
+    let (|SauceChoiceNeeded|_|) model =
+        match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
+        | (Some Soft, None, [ Meat; Rice false; StripsOfMeat true ], Some FlatFoldedInHalf, None) -> Some HasSauceOnTop
         | _ -> None
 
     let decideNextQuestion model =
@@ -91,32 +129,66 @@ module State =
         | SizeAndShapeChoiceNeeded q -> Some q
         | MeatInsideChoiceNeeded q -> Some q
         | WhatsInsideChoiceNeeded q -> Some q
+        | AnyRiceChoiceNeeded q -> Some q
+        | FriedChoiceNeeded q -> Some q
+        | FoldingChoiceNeeded q -> Some q
+        | StripsOfMeatChoiceNeeded q -> Some q
+        | SauceChoiceNeeded q -> Some q
         | _ -> None
 
     let (|ItsNachos|_|) model =
         match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
-        | (Some Crunchy, None, None, None, Some SmallTrianglesOvalsOrRectangles) -> Some Nachos
+        | (Some Crunchy, None, None, [], Some SmallTrianglesOvalsOrRectangles) -> Some Nachos
         | _ -> None
 
     let (|ItsTaquito|_|) model =
         match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
-        | (Some Crunchy, None, None, None, Some RolledUp) -> Some Taquito
+        | (Some Crunchy, None, None, [], Some RolledUp) -> Some Taquito
         | _ -> None
 
     let (|ItsTaco|_|) model =
         match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
-        | (Some Crunchy, None, None, Some Meat, Some Handsized) -> Some Taco
-        | (Some Crunchy, None, None, Some Empty, Some Handsized) -> Some EmptyTacoShellForParty
+        | (Some Crunchy, None, None, [ Meat ], Some Handsized) -> Some Taco
+        | (Some Soft, Some Roundish, Some false, [ Meat; Rice false ], _) -> Some Taco
+        | (Some Soft, Some FlatFoldedInHalf, None, [ Meat; Rice false; StripsOfMeat false ], _) -> Some Taco
+        | _ -> None
+
+    let (|ItsTacoShellsForParty|_|) model =
+        match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
+        | (Some Crunchy, None, None, [ Empty ], Some Handsized) -> Some EmptyTacoShellForParty
         | _ -> None
 
     let (|ItsTortillaSoup|_|) model =
         match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
-        | (Some Soft, None, None, Some Soup, None) -> Some TortillaSoup
+        | (Some Soft, None, None, [ Soup ], None) -> Some TortillaSoup
         | _ -> None
 
     let (|ItsQuesadilla|_|) model =
         match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
-        | (Some Soft, None, None, Some Cheese, None) -> Some Quesadilla
+        | (Some Soft, None, None, [ Cheese ], None) -> Some Quesadilla
+        | _ -> None
+
+    let (|ItsBurito|_|) model =
+        match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
+        | (Some Soft, None, Some false, [ Meat; Rice true ], None) -> Some Burito
+        | _ -> None
+
+    let (|ItsChimiChanga|_|) model =
+        match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
+        | (Some Soft, None, Some true, [ Meat; Rice true ], None) -> Some ChimiChanga
+        | (Some Soft, Some Roundish, Some true, [ Meat; Rice false ], None) -> Some ChimiChanga
+        | _ -> None
+
+    let (|ItsEnchilada|_|) model =
+        match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
+        | (Some Soft, Some FlatFoldedInHalf, None, [ Meat; Rice false; StripsOfMeat true; SauceOnTop true ], None) ->
+            Some Enchilada
+        | _ -> None
+
+    let (|ItsFajita|_|) model =
+        match (model.Condition, model.Folding, model.Fried, model.FillingOrSurrounding, model.SizeAndShape) with
+        | (Some Soft, Some FlatFoldedInHalf, None, [ Meat; Rice false; StripsOfMeat true; SauceOnTop false ], None) ->
+            Some Fajita
         | _ -> None
 
     let getComida model =
@@ -124,8 +196,13 @@ module State =
         | ItsNachos x -> Some x
         | ItsTaquito x -> Some x
         | ItsTaco x -> Some x
+        | ItsTacoShellsForParty x -> Some x
         | ItsTortillaSoup x -> Some x
         | ItsQuesadilla x -> Some x
+        | ItsBurito x -> Some x
+        | ItsChimiChanga x -> Some x
+        | ItsEnchilada x -> Some x
+        | ItsFajita x -> Some x
         | _ -> None
 
     let init () =
@@ -134,7 +211,7 @@ module State =
               Condition = None
               Folding = None
               Fried = None
-              FillingOrSurrounding = None
+              FillingOrSurrounding = List.empty
               SizeAndShape = None
               Comida = None }
 
@@ -162,7 +239,8 @@ module State =
             (model'', Cmd.none)
         | ChooseIsMeatInside b ->
             let model' =
-                { model with FillingOrSurrounding = if b then Some Meat else Some Empty }
+                let toAdd = if b then Meat else Empty
+                { model with FillingOrSurrounding = List.append model.FillingOrSurrounding [ toAdd ] }
 
             let model'' =
                 { model' with
@@ -171,7 +249,57 @@ module State =
 
             (model'', Cmd.none)
         | ChooseWhatsInside x ->
-            let model' = { model with FillingOrSurrounding = Some x }
+            let model' =
+                { model with FillingOrSurrounding = List.append model.FillingOrSurrounding [ x ] }
+
+            let model'' =
+                { model' with
+                    NextQuestion = decideNextQuestion model'
+                    Comida = getComida model' }
+
+            (model'', Cmd.none)
+        | ChooseAnyRice b ->
+            let model' =
+                { model with FillingOrSurrounding = List.append model.FillingOrSurrounding [ Rice b ] }
+
+            let model'' =
+                { model' with
+                    NextQuestion = decideNextQuestion model'
+                    Comida = getComida model' }
+
+            (model'', Cmd.none)
+        | ChooseIsFried b ->
+            let model' = { model with Fried = Some b }
+
+            let model'' =
+                { model' with
+                    NextQuestion = decideNextQuestion model'
+                    Comida = getComida model' }
+
+            (model'', Cmd.none)
+
+        | ChooseFolding f ->
+            let model' = { model with Folding = Some f }
+
+            let model'' =
+                { model' with
+                    NextQuestion = decideNextQuestion model'
+                    Comida = getComida model' }
+
+            (model'', Cmd.none)
+        | ChooseHasStripsOfMeat b ->
+            let model' =
+                { model with FillingOrSurrounding = List.append model.FillingOrSurrounding [ StripsOfMeat b ] }
+
+            let model'' =
+                { model' with
+                    NextQuestion = decideNextQuestion model'
+                    Comida = getComida model' }
+
+            (model'', Cmd.none)
+        | ChooseSauceOnTop b ->
+            let model' =
+                { model with FillingOrSurrounding = List.append model.FillingOrSurrounding [ SauceOnTop b ] }
 
             let model'' =
                 { model' with
@@ -180,7 +308,6 @@ module State =
 
             (model'', Cmd.none)
         | Restart -> init ()
-        | _ -> System.NotImplementedException() |> raise
 
 module View =
 
@@ -197,54 +324,76 @@ module View =
         Bulma.textarea [ prop.value $"{string comida}!!!\nBuen provecho :)" ]
 
     let whatConditionButtons dispatch =
-        [ button "soft" (ChooseCondition Soft) dispatch
+        [ Html.p "What is your tortilla like?"
+          button "soft" (ChooseCondition Soft) dispatch
           button "crunchy" (ChooseCondition Crunchy) dispatch ]
         |> Html.div
 
     let whatSizeAndShapeButtons dispatch =
-        [ button "small triangles, ovals or rectangles" (ChooseSizeAndShap SmallTrianglesOvalsOrRectangles) dispatch
+        [ Html.p "What shape and size?"
+          button "small triangles, ovals or rectangles" (ChooseSizeAndShap SmallTrianglesOvalsOrRectangles) dispatch
           button "But I can't tell, it's all rolled up!" (ChooseSizeAndShap RolledUp) dispatch
           button "The size of someone's hand I guess." (ChooseSizeAndShap Handsized) dispatch ]
         |> Html.div
 
     let isMeatInsideButtons dispatch =
-        [ button "Darn tootin'! (Yes)" (ChooseIsMeatInside true) dispatch
+        [ Html.p "Is there meat inside?"
+          button "Darn tootin'! (Yes)" (ChooseIsMeatInside true) dispatch
           button "No. It's empty." (ChooseIsMeatInside false) dispatch ]
         |> Html.div
 
     let whatsInsideButtons dispatch =
-        [ button "mostly meat" (ChooseWhatsInside Meat) dispatch
+        [ Html.p "What's inside?"
+          button "mostly meat" (ChooseWhatsInside Meat) dispatch
           button "mostly cheese" (ChooseWhatsInside Cheese) dispatch
           button "This is a SOUP!." (ChooseWhatsInside Soup) dispatch ]
         |> Html.div
 
-    let (|ItsNachos|_|) model =
-        match model.Condition, model.SizeAndShape with
-        | Some Crunchy, Some SmallTrianglesOvalsOrRectangles -> result Nachos |> Some
-        | _ -> None
+    let anyRiceButtons dispatch =
+        [ Html.p "Any rice?"
+          button "yup" (ChooseAnyRice true) dispatch
+          button "negative" (ChooseAnyRice false) dispatch ]
+        |> Html.div
 
-    let (|ItsTaquito|_|) model =
-        match model.Condition, model.SizeAndShape with
-        | Some Crunchy, Some RolledUp -> result Taquito |> Some
-        | _ -> None
+    let isFriedButtons dispatch =
+        [ Html.p "Is it fried?"
+          button "yes" (ChooseIsFried true) dispatch
+          button "gross. no." (ChooseIsFried false) dispatch ]
+        |> Html.div
 
-    let (|ItsTaco|_|) model =
-        match model.Condition, model.SizeAndShape, model.FillingOrSurrounding with
-        | Some Crunchy, Some Handsized, Some Meat -> result Taco |> Some
-        | Some Crunchy, Some Handsized, Some Empty -> result EmptyTacoShellForParty |> Some
-        | _ -> None
+    let whatFoldingButtons dispatch =
+        [ Html.p "How is it folded?"
+          button "round-ish" (ChooseFolding Roundish) dispatch
+          button "flat, folded in half" (ChooseFolding FlatFoldedInHalf) dispatch ]
+        |> Html.div
+
+    let hasStripsOfMeatButtons dispatch =
+        [ Html.p "Strips of meat?"
+          button "no" (ChooseHasStripsOfMeat false) dispatch
+          button "yeah, actually" (ChooseHasStripsOfMeat true) dispatch ]
+        |> Html.div
+
+    let hasSauceOnTopButtons dispatch =
+        [ Html.p "Sauce on top?"
+          button "no" (ChooseSauceOnTop false) dispatch
+          button "yes" (ChooseSauceOnTop true) dispatch ]
+        |> Html.div
 
     [<ReactComponent>]
-    let ViewComp() =
+    let ViewComp () =
 
-        let state, dispatch = React.useElmish(State.init, State.update, [| |])
+        let state, dispatch = React.useElmish (State.init, State.update, [||])
 
         let description =
-            string state.Condition
+            $"Condition {string state.Condition}"
             + "\n"
-            + string state.SizeAndShape
+            + $"SizeAndShape {string state.SizeAndShape}"
             + "\n"
-            + string state.FillingOrSurrounding
+            + $"FillingOrSurrounding {string state.FillingOrSurrounding}"
+            + "\n"
+            + $"Fried {string state.Fried}"
+            + "\n"
+            + $"Folding {string state.Folding}"
 
         [ Html.textarea [ prop.value description ]
 
@@ -256,7 +405,12 @@ module View =
               | Some WhatSizeAndShape -> whatSizeAndShapeButtons dispatch
               | Some IsMeatInside -> isMeatInsideButtons dispatch
               | Some WhatsInside -> whatsInsideButtons dispatch
-              | _ -> ()
+              | Some AnyRice -> anyRiceButtons dispatch
+              | Some IsFried -> isFriedButtons dispatch
+              | Some WhatFolding -> whatFoldingButtons dispatch
+              | Some HasStripsOfMeat -> hasStripsOfMeatButtons dispatch
+              | Some HasSauceOnTop -> hasSauceOnTopButtons dispatch
+              | None -> ()
           Html.br []
           button "Restart" Restart dispatch ]
         |> Html.div
