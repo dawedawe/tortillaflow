@@ -1,8 +1,8 @@
 module App
 
 #if DEBUG
-open Elmish.Debug
-open Elmish.HMR
+// open Elmish.Debug
+// open Elmish.HMR
 #endif
 
 open Elmish
@@ -173,18 +173,18 @@ module View =
     let whatConditionButtons dispatch =
         [ button "soft" (ChooseCondition Soft) dispatch
           button "crunchy" (ChooseCondition Crunchy) dispatch ]
-        |> Fable.React.Helpers.ofList
+        |> Html.div
 
     let whatSizeAndShapeButtons dispatch =
         [ button "small triangles, ovals or rectangles" (ChooseSizeAndShap SmallTrianglesOvalsOrRectangles) dispatch
           button "But I can't tell, it's all rolled up!" (ChooseSizeAndShap RolledUp) dispatch
           button "The size of someone's hand I guess." (ChooseSizeAndShap Handsized) dispatch ]
-        |> Fable.React.Helpers.ofList
+        |> Html.div
 
     let isMeatInsideButtons dispatch =
         [ button "Darn tootin'! (Yes)" (ChooseIsMeatInside true) dispatch
           button "No. It's empty." (ChooseIsMeatInside false) dispatch ]
-        |> Fable.React.Helpers.ofList
+        |> Html.div
 
     let (|ItsNachos|_|) model =
         match model.Condition, model.SizeAndShape with
@@ -223,7 +223,7 @@ module View =
               | _ -> ()
           Html.br []
           button "Restart" Restart dispatch ]
-        |> Fable.React.Helpers.ofList
+        |> Html.div
 
 open State
 open View
