@@ -8,6 +8,10 @@ div.box.result {
     font-weight: bold;
 }
 
+div.box {
+    text-align: center;
+}
+
 p.comida {
     font-size: xx-large;
     font-weight: bolder;
@@ -26,4 +30,9 @@ textarea {
     margin: 10px;
     height: 150px;
     width: 300px;
+}
+
+h1 {
+    margin: 10px;
+    text-align: center;
 }

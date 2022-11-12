@@ -330,7 +330,7 @@ module View =
             [ prop.className "result"
               prop.children
                   [ Html.p "You end up with:"
-                    Html.p [ prop.className "comida"; prop.text  $"{string comida}" ]
+                    Html.p [ prop.className "comida"; prop.text $"{string comida}" ]
                     Html.p "Buen provecho :)" ] ]
 
     let whatConditionButtons dispatch =
@@ -356,7 +356,7 @@ module View =
         [ Html.p "What's inside?"
           button "mostly meat" (ChooseWhatsInside Meat) dispatch
           button "mostly cheese" (ChooseWhatsInside Cheese) dispatch
-          button "This is a SOUP!." (ChooseWhatsInside Soup) dispatch ]
+          button "This is a SOUP!" (ChooseWhatsInside Soup) dispatch ]
         |> Bulma.box
 
     let anyRiceButtons dispatch =
@@ -405,7 +405,8 @@ module View =
             + "\n"
             + $"Folding {string state.Folding}"
 
-        [ Bulma.box [ Html.textarea [ prop.value description ] ]
+        [ Bulma.title "Tortilla flow"
+          Bulma.box [ Html.textarea [ prop.value description ] ]
 
           if Option.isSome state.Comida then
               result state.Comida.Value
@@ -421,8 +422,9 @@ module View =
               | Some HasStripsOfMeat -> hasStripsOfMeatButtons dispatch
               | Some HasSauceOnTop -> hasSauceOnTopButtons dispatch
               | None -> ()
-          Html.br []
-          button "Restart" Restart dispatch ]
+          
+          Bulma.box [ button "Restart" Restart dispatch ]
+        ]
         |> Html.div
 
 open Browser.Dom
