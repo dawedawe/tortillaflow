@@ -432,7 +432,6 @@ module View =
             + $"Folding {string state.Folding}"
 
         [ Bulma.title "Tortilla flow"
-          Bulma.box [ Html.textarea [ prop.value description ] ]
 
           if Option.isSome state.Comida then
               result state.Comida.Value
@@ -449,6 +448,7 @@ module View =
               | Some HasSauceOnTop -> hasSauceOnTopButtons dispatch
               | None -> ()
 
+          Bulma.box [ Html.textarea [ prop.value description ] ]
           Bulma.box [ button "Restart" Restart dispatch ] ]
         |> Html.div
 
