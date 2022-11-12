@@ -320,64 +320,74 @@ module View =
     let button (text: string) m dispatch =
         Bulma.button.button [ prop.text text; prop.onClick (fun _ -> m |> dispatch) ]
 
+    let result2 comida =
+        Html.div
+            [ prop.className "result"
+              prop.children [ Bulma.box [ Html.p $"{string comida}"; Html.p "Buen provecho :)" ] ] ]
+
     let result comida =
-        Bulma.textarea [ prop.value $"{string comida}!!!\nBuen provecho :)" ]
+        Bulma.box
+            [ prop.className "result"
+              prop.children
+                  [ Html.p "You end up with:"
+                    Html.p [ prop.className "comida"; prop.text  $"{string comida}" ]
+                    Html.p "Buen provecho :)" ] ]
 
     let whatConditionButtons dispatch =
         [ Html.p "What is your tortilla like?"
           button "soft" (ChooseCondition Soft) dispatch
           button "crunchy" (ChooseCondition Crunchy) dispatch ]
-        |> Html.div
+        |> Bulma.box
 
     let whatSizeAndShapeButtons dispatch =
         [ Html.p "What shape and size?"
           button "small triangles, ovals or rectangles" (ChooseSizeAndShap SmallTrianglesOvalsOrRectangles) dispatch
           button "But I can't tell, it's all rolled up!" (ChooseSizeAndShap RolledUp) dispatch
           button "The size of someone's hand I guess." (ChooseSizeAndShap Handsized) dispatch ]
-        |> Html.div
+        |> Bulma.box
 
     let isMeatInsideButtons dispatch =
         [ Html.p "Is there meat inside?"
           button "Darn tootin'! (Yes)" (ChooseIsMeatInside true) dispatch
           button "No. It's empty." (ChooseIsMeatInside false) dispatch ]
-        |> Html.div
+        |> Bulma.box
 
     let whatsInsideButtons dispatch =
         [ Html.p "What's inside?"
           button "mostly meat" (ChooseWhatsInside Meat) dispatch
           button "mostly cheese" (ChooseWhatsInside Cheese) dispatch
           button "This is a SOUP!." (ChooseWhatsInside Soup) dispatch ]
-        |> Html.div
+        |> Bulma.box
 
     let anyRiceButtons dispatch =
         [ Html.p "Any rice?"
           button "yup" (ChooseAnyRice true) dispatch
           button "negative" (ChooseAnyRice false) dispatch ]
-        |> Html.div
+        |> Bulma.box
 
     let isFriedButtons dispatch =
         [ Html.p "Is it fried?"
           button "yes" (ChooseIsFried true) dispatch
           button "gross. no." (ChooseIsFried false) dispatch ]
-        |> Html.div
+        |> Bulma.box
 
     let whatFoldingButtons dispatch =
         [ Html.p "How is it folded?"
           button "round-ish" (ChooseFolding Roundish) dispatch
           button "flat, folded in half" (ChooseFolding FlatFoldedInHalf) dispatch ]
-        |> Html.div
+        |> Bulma.box
 
     let hasStripsOfMeatButtons dispatch =
         [ Html.p "Strips of meat?"
           button "no" (ChooseHasStripsOfMeat false) dispatch
           button "yeah, actually" (ChooseHasStripsOfMeat true) dispatch ]
-        |> Html.div
+        |> Bulma.box
 
     let hasSauceOnTopButtons dispatch =
         [ Html.p "Sauce on top?"
           button "no" (ChooseSauceOnTop false) dispatch
           button "yes" (ChooseSauceOnTop true) dispatch ]
-        |> Html.div
+        |> Bulma.box
 
     [<ReactComponent>]
     let ViewComp () =
@@ -395,10 +405,10 @@ module View =
             + "\n"
             + $"Folding {string state.Folding}"
 
-        [ Html.textarea [ prop.value description ]
+        [ Bulma.box [ Html.textarea [ prop.value description ] ]
 
           if Option.isSome state.Comida then
-              result state.Comida
+              result state.Comida.Value
           else
               match state.NextQuestion with
               | Some WhatCondition -> whatConditionButtons dispatch
