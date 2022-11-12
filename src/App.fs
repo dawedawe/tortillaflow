@@ -1,13 +1,5 @@
 module App
 
-#if DEBUG
-// open Elmish.Debug
-// open Elmish.HMR
-#endif
-
-open Elmish
-open Elmish.React
-
 module Model =
 
     type Folding =
@@ -68,6 +60,8 @@ module Model =
         | Restart
 
 module State =
+
+    open Elmish
 
     open Model
 
@@ -192,6 +186,8 @@ module View =
 
     open Feliz
     open Feliz.Bulma
+    open Feliz.UseElmish
+
     open Model
 
     let button (text: string) m dispatch =
@@ -238,21 +234,24 @@ module View =
         | Some Crunchy, Some Handsized, Some Empty -> result EmptyTacoShellForParty |> Some
         | _ -> None
 
-    let view model dispatch =
+    [<ReactComponent>]
+    let ViewComp() =
+
+        let state, dispatch = React.useElmish(State.init, State.update, [| |])
 
         let description =
-            string model.Condition
+            string state.Condition
             + "\n"
-            + string model.SizeAndShape
+            + string state.SizeAndShape
             + "\n"
-            + string model.FillingOrSurrounding
+            + string state.FillingOrSurrounding
 
-        [ Bulma.textarea [ prop.value description ]
+        [ Html.textarea [ prop.value description ]
 
-          if Option.isSome model.Comida then
-              result model.Comida
+          if Option.isSome state.Comida then
+              result state.Comida
           else
-              match model.NextQuestion with
+              match state.NextQuestion with
               | Some WhatCondition -> whatConditionButtons dispatch
               | Some WhatSizeAndShape -> whatSizeAndShapeButtons dispatch
               | Some IsMeatInside -> isMeatInsideButtons dispatch
@@ -262,10 +261,7 @@ module View =
           button "Restart" Restart dispatch ]
         |> Html.div
 
-open State
+open Browser.Dom
 open View
 
-Program.mkProgram init update view
-|> Program.withReactBatched "elmish-app"
-|> Program.withConsoleTrace
-|> Program.run
+Feliz.ReactDOM.render (ViewComp, document.getElementById "elmish-app")
