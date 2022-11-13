@@ -86,8 +86,9 @@ jobs:
 
     - name: npm install, build
       run: |
-        npm install
-        npm run build
+        dotnet tool restore
+      # npm install
+      # npm run build
 
     - name: 'Deploy to Azure WebApp'
       id: deploy-to-webapp
