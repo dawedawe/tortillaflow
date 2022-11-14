@@ -63,11 +63,8 @@ module Model =
         | ChooseSizeAndShap of SizeAndShape
         | ChooseIsMeatInside of bool
         | ChooseWhatsInside of FillingOrSurrounding
-        | ChooseAnyRice of bool
         | ChooseIsFried of bool
         | ChooseFolding of Folding
-        | ChooseHasStripsOfMeat of bool
-        | ChooseSauceOnTop of bool
         | Restart
 
 module State =
@@ -83,7 +80,9 @@ module State =
         | (Some Crunchy, Some Handsized, [], None, None) -> MeatInsideChoiceNeeded
         | _ -> NoQuestionLeft
 
-    let (|WhatsInsideChoiceNeeded|AnyRiceChoiceNeeded|FriedChoiceNeeded|FoldingChoiceNeeded|StripsOfMeatChoiceNeeded|SauceChoiceNeeded|NoQuestionLeft|) model =
+    let (|WhatsInsideChoiceNeeded|AnyRiceChoiceNeeded|FriedChoiceNeeded|FoldingChoiceNeeded|StripsOfMeatChoiceNeeded|SauceChoiceNeeded|NoQuestionLeft|)
+        model
+        =
         match (model.Condition, model.SizeAndShape, model.FillingOrSurrounding, model.Folding, model.Fried) with
         | (Some Soft, None, [], None, None) -> WhatsInsideChoiceNeeded
         | (Some Soft, None, [ Meat ], None, None) -> AnyRiceChoiceNeeded
@@ -197,16 +196,6 @@ module State =
                     Comida = getComida model' }
 
             (model'', Cmd.none)
-        | ChooseAnyRice b ->
-            let model' =
-                { model with FillingOrSurrounding = List.append model.FillingOrSurrounding [ Rice b ] }
-
-            let model'' =
-                { model' with
-                    NextQuestion = decideNextQuestion model'
-                    Comida = getComida model' }
-
-            (model'', Cmd.none)
         | ChooseIsFried b ->
             let model' = { model with Fried = Some b }
 
@@ -216,29 +205,8 @@ module State =
                     Comida = getComida model' }
 
             (model'', Cmd.none)
-
         | ChooseFolding f ->
             let model' = { model with Folding = Some f }
-
-            let model'' =
-                { model' with
-                    NextQuestion = decideNextQuestion model'
-                    Comida = getComida model' }
-
-            (model'', Cmd.none)
-        | ChooseHasStripsOfMeat b ->
-            let model' =
-                { model with FillingOrSurrounding = List.append model.FillingOrSurrounding [ StripsOfMeat b ] }
-
-            let model'' =
-                { model' with
-                    NextQuestion = decideNextQuestion model'
-                    Comida = getComida model' }
-
-            (model'', Cmd.none)
-        | ChooseSauceOnTop b ->
-            let model' =
-                { model with FillingOrSurrounding = List.append model.FillingOrSurrounding [ SauceOnTop b ] }
 
             let model'' =
                 { model' with
@@ -327,8 +295,8 @@ module View =
 
     let anyRiceButtons dispatch =
         [ Html.p "Any rice?"
-          button "yup" (ChooseAnyRice true) dispatch
-          button "negative" (ChooseAnyRice false) dispatch ]
+          button "yup" (Rice true |> ChooseWhatsInside) dispatch
+          button "negative" (Rice false |> ChooseWhatsInside) dispatch ]
         |> Bulma.box
 
     let isFriedButtons dispatch =
@@ -345,14 +313,14 @@ module View =
 
     let hasStripsOfMeatButtons dispatch =
         [ Html.p "Strips of meat?"
-          button "no" (ChooseHasStripsOfMeat false) dispatch
-          button "yeah, actually" (ChooseHasStripsOfMeat true) dispatch ]
+          button "no" (StripsOfMeat false |> ChooseWhatsInside) dispatch
+          button "yeah, actually" (StripsOfMeat true |> ChooseWhatsInside) dispatch ]
         |> Bulma.box
 
     let hasSauceOnTopButtons dispatch =
         [ Html.p "Sauce on top?"
-          button "no" (ChooseSauceOnTop false) dispatch
-          button "yes" (ChooseSauceOnTop true) dispatch ]
+          button "no" (SauceOnTop false |> ChooseWhatsInside) dispatch
+          button "yes" (SauceOnTop true |> ChooseWhatsInside) dispatch ]
         |> Bulma.box
 
     [<ReactComponent>]
