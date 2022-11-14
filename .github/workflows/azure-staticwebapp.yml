@@ -49,12 +49,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Setup .NET Core SDK
+      - name: Build
         uses: actions/setup-dotnet@v3.0.3
         with:
           dotnet-version: 6.x
-
-      - name: Build
         run: |
           npm install
           npm run build
