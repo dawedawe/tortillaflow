@@ -61,7 +61,6 @@ module Model =
     type Msg =
         | ChooseCondition of Condition
         | ChooseSizeAndShap of SizeAndShape
-        | ChooseIsMeatInside of bool
         | ChooseWhatsInside of FillingOrSurrounding
         | ChooseIsFried of bool
         | ChooseFolding of Folding
@@ -175,17 +174,6 @@ module State =
                     Comida = getComida model' }
 
             (model'', Cmd.none)
-        | ChooseIsMeatInside b ->
-            let model' =
-                let toAdd = if b then Meat else Empty
-                { model with FillingOrSurrounding = List.append model.FillingOrSurrounding [ toAdd ] }
-
-            let model'' =
-                { model' with
-                    NextQuestion = decideNextQuestion model'
-                    Comida = getComida model' }
-
-            (model'', Cmd.none)
         | ChooseWhatsInside x ->
             let model' =
                 { model with FillingOrSurrounding = List.append model.FillingOrSurrounding [ x ] }
@@ -282,8 +270,8 @@ module View =
 
     let isMeatInsideButtons dispatch =
         [ Html.p "Is there meat inside?"
-          button "Darn tootin'! (Yes)" (ChooseIsMeatInside true) dispatch
-          button "No. It's empty." (ChooseIsMeatInside false) dispatch ]
+          button "Darn tootin'! (Yes)" (ChooseWhatsInside Meat) dispatch
+          button "No. It's empty." (ChooseWhatsInside Empty) dispatch ]
         |> Bulma.box
 
     let whatsInsideButtons dispatch =
