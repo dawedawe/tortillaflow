@@ -54,10 +54,8 @@ jobs:
         with:
           dotnet-version: 6.x
 
-      - name: Build
-        run: |
-          npm install
-          npm run build
+      - run: npm install
+      - run: npm build
           
       - name: Build And Deploy
         id: builddeploy
