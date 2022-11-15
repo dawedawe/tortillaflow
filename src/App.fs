@@ -53,14 +53,17 @@ module Model =
         | HasStripsOfMeat
         | HasSauceOnTop
 
-    type Model =
-        { NextQuestion: Question option
-          Condition: Condition option
+    type Tortilla =
+        { Condition: Condition option
           Folding: Folding option
           Fried: Fried option
           Fixings: Fixings option
           SizeAndShape: SizeAndShape option
           Comida: Comida option }
+
+    type Model =
+        { NextQuestion: Question option
+          Tortilla: Tortilla }
 
     type Msg =
         | ChooseCondition of Condition
@@ -101,8 +104,8 @@ module State =
            None) -> SauceChoiceNeeded
         | _ -> NoQuestionLeft
 
-    let decideNextQuestion model =
-        match model with
+    let decideNextQuestion tortilla =
+        match tortilla with
         | ConditionChoiceNeeded -> Some WhatCondition
         | SizeAndShapeChoiceNeeded -> Some WhatSizeAndShape
         | MeatInsideChoiceNeeded -> Some IsMeatInside
@@ -165,70 +168,71 @@ module State =
     let init () =
         let model =
             { NextQuestion = Some WhatCondition
-              Condition = None
-              Folding = None
-              Fried = None
-              Fixings = None
-              SizeAndShape = None
-              Comida = None }
+              Tortilla =
+                { Condition = None
+                  Folding = None
+                  Fried = None
+                  Fixings = None
+                  SizeAndShape = None
+                  Comida = None } }
 
         (model, Cmd.none)
 
     let update (msg: Msg) (model: Model) =
         match msg with
         | ChooseCondition c ->
-            let model' = { model with Condition = Some c }
+            let tortilla = { model.Tortilla with Condition = Some c }
 
-            let model'' =
-                { model' with
-                    NextQuestion = decideNextQuestion model'
-                    Comida = getComida model' }
+            let model' =
+                { model with
+                    NextQuestion = decideNextQuestion tortilla
+                    Tortilla = { tortilla with Comida = getComida tortilla } }
 
-            (model'', Cmd.none)
+            (model', Cmd.none)
         | ChooseSizeAndShap s ->
-            let model' = { model with SizeAndShape = Some s }
+            let tortilla = { model.Tortilla with SizeAndShape = Some s }
 
-            let model'' =
-                { model' with
-                    NextQuestion = decideNextQuestion model'
-                    Comida = getComida model' }
+            let model' =
+                { model with
+                    NextQuestion = decideNextQuestion tortilla
+                    Tortilla = { tortilla with Comida = getComida tortilla } }
 
-            (model'', Cmd.none)
+            (model', Cmd.none)
         | ChooseFixings x ->
             let fixings' =
-                match (model.Fixings, x) with
+                match (model.Tortilla.Fixings, x) with
                 | (_, Empty) -> Some Empty
                 | (None, (FillingOrSurroundings _ as newF)) -> Some(newF)
                 | (Some Empty, (FillingOrSurroundings _ as newF)) -> Some(newF)
                 | (Some(FillingOrSurroundings fs), FillingOrSurroundings toAdd) ->
                     Some(FillingOrSurroundings(List.append fs toAdd))
 
-            let model' = { model with Fixings = fixings' }
+            let tortilla = { model.Tortilla with Fixings = fixings' }
 
-            let model'' =
-                { model' with
-                    NextQuestion = decideNextQuestion model'
-                    Comida = getComida model' }
+            let model' =
+                { model with
+                    NextQuestion = decideNextQuestion tortilla
+                    Tortilla = { tortilla with Comida = getComida tortilla } }
 
-            (model'', Cmd.none)
+            (model', Cmd.none)
         | ChooseIsFried b ->
-            let model' = { model with Fried = Some b }
+            let tortilla = { model.Tortilla with Fried = Some b }
 
-            let model'' =
-                { model' with
-                    NextQuestion = decideNextQuestion model'
-                    Comida = getComida model' }
+            let model' =
+                { model with
+                    NextQuestion = decideNextQuestion tortilla
+                    Tortilla = { tortilla with Comida = getComida tortilla } }
 
-            (model'', Cmd.none)
+            (model', Cmd.none)
         | ChooseFolding f ->
-            let model' = { model with Folding = Some f }
+            let tortilla = { model.Tortilla with Folding = Some f }
 
-            let model'' =
-                { model' with
-                    NextQuestion = decideNextQuestion model'
-                    Comida = getComida model' }
+            let model' =
+                { model with
+                    NextQuestion = decideNextQuestion tortilla
+                    Tortilla = { tortilla with Comida = getComida tortilla } }
 
-            (model'', Cmd.none)
+            (model', Cmd.none)
         | Restart -> init ()
 
 module View =
@@ -344,20 +348,20 @@ module View =
         let state, dispatch = React.useElmish (State.init, State.update, [||])
 
         let description =
-            $"Condition {string state.Condition}"
+            $"Condition {string state.Tortilla.Condition}"
             + "\n"
-            + $"SizeAndShape {string state.SizeAndShape}"
+            + $"SizeAndShape {string state.Tortilla.SizeAndShape}"
             + "\n"
-            + $"Fixings {string state.Fixings}"
+            + $"Fixings {string state.Tortilla.Fixings}"
             + "\n"
-            + $"Fried {string state.Fried}"
+            + $"Fried {string state.Tortilla.Fried}"
             + "\n"
-            + $"Folding {string state.Folding}"
+            + $"Folding {string state.Tortilla.Folding}"
 
         [ Bulma.title "Tortilla flow"
 
-          if Option.isSome state.Comida then
-              result state.Comida.Value
+          if Option.isSome state.Tortilla.Comida then
+              result state.Tortilla.Comida.Value
           else
               match state.NextQuestion with
               | Some WhatCondition -> whatConditionButtons dispatch
