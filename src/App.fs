@@ -64,10 +64,15 @@ module Model =
         { NextQuestion: Question option
           Tortilla: Tortilla }
 
+    [<RequireQualifiedAccess>]
+    type ChosenFixing =
+        | Empty
+        | Fixing of Feature
+
     type Msg =
         | ChooseCondition of Condition
         | ChooseSizeAndShap of SizeAndShape
-        | ChooseFixings of Fixings
+        | ChooseFixings of ChosenFixing
         | ChooseIsFried of bool
         | ChooseFolding of Folding
         | Restart
@@ -188,10 +193,10 @@ module State =
         | ChooseFixings x ->
             let fixings' =
                 match (model.Tortilla.Fixings, x) with
-                | (_, Empty) -> Some Empty
-                | (None, (Features _ as newF)) -> Some(newF)
-                | (Some Empty, (Features _ as newF)) -> Some(newF)
-                | (Some(Features fs), Features toAdd) -> Some(Features(List.append fs toAdd))
+                | (_, ChosenFixing.Empty) -> Some Empty
+                | (None, ChosenFixing.Fixing f) -> Some(Features [ f ])
+                | (Some Empty, ChosenFixing.Fixing f) -> Some(Features [ f ])
+                | (Some(Features fs), ChosenFixing.Fixing f) -> Some(Features(List.append fs [ f ]))
 
             let tortilla = { model.Tortilla with Fixings = fixings' }
 
@@ -287,21 +292,21 @@ module View =
 
     let isMeatInsideButtons dispatch =
         [ Html.p "Is there meat inside?"
-          button "Darn tootin'! (Yes)" (ChooseFixings(Features [ Meat ])) dispatch
-          button "No. It's empty." (ChooseFixings Empty) dispatch ]
+          button "Darn tootin'! (Yes)" (ChooseFixings(ChosenFixing.Fixing Meat)) dispatch
+          button "No. It's empty." (ChooseFixings ChosenFixing.Empty) dispatch ]
         |> Bulma.box
 
     let whatsInsideButtons dispatch =
         [ Html.p "What's inside?"
-          button "mostly meat" (ChooseFixings(Features [ Meat ])) dispatch
-          button "mostly cheese" (ChooseFixings(Features [ Cheese ])) dispatch
-          button "This is a SOUP!" (ChooseFixings(Features [ Soup ])) dispatch ]
+          button "mostly meat" (ChooseFixings(ChosenFixing.Fixing Meat)) dispatch
+          button "mostly cheese" (ChooseFixings(ChosenFixing.Fixing Cheese)) dispatch
+          button "This is a SOUP!" (ChooseFixings(ChosenFixing.Fixing Soup)) dispatch ]
         |> Bulma.box
 
     let anyRiceButtons dispatch =
         [ Html.p "Any rice?"
-          button "yup" (Features [ Rice true ] |> ChooseFixings) dispatch
-          button "negative" (Features [ Rice false ] |> ChooseFixings) dispatch ]
+          button "yup" (ChosenFixing.Fixing(Rice true) |> ChooseFixings) dispatch
+          button "negative" (ChosenFixing.Fixing(Rice false) |> ChooseFixings) dispatch ]
         |> Bulma.box
 
     let isFriedButtons dispatch =
@@ -318,14 +323,14 @@ module View =
 
     let hasStripsOfMeatButtons dispatch =
         [ Html.p "Strips of meat?"
-          button "no" (Features [ MeatStrips false ] |> ChooseFixings) dispatch
-          button "yeah, actually" (Features [ MeatStrips true ] |> ChooseFixings) dispatch ]
+          button "no" (ChosenFixing.Fixing(MeatStrips false) |> ChooseFixings) dispatch
+          button "yeah, actually" (ChosenFixing.Fixing(MeatStrips true) |> ChooseFixings) dispatch ]
         |> Bulma.box
 
     let hasSauceOnTopButtons dispatch =
         [ Html.p "Sauce on top?"
-          button "no" (Features [ SauceOnTop false ] |> ChooseFixings) dispatch
-          button "yes" (Features [ SauceOnTop true ] |> ChooseFixings) dispatch ]
+          button "no" (ChosenFixing.Fixing(SauceOnTop false) |> ChooseFixings) dispatch
+          button "yes" (ChosenFixing.Fixing(SauceOnTop true) |> ChooseFixings) dispatch ]
         |> Bulma.box
 
     [<ReactComponent>]
