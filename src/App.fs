@@ -9,7 +9,6 @@ module Model =
     type Fried = bool
 
     type FillingOrSurrounding =
-        | Empty
         | Meat
         | StripsOfMeat of bool
         | Cheese
