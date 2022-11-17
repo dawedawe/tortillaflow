@@ -9,16 +9,44 @@ module Model =
     type Fried = bool
 
     type Feature =
+        | Empty
         | Meat
-        | MeatStrips of bool
+        | MeatStrips
+        | NoMeatStrips
         | Cheese
-        | Rice of bool
+        | Rice
+        | NoRice
         | Soup
-        | SauceOnTop of bool
+        | SauceOnTop
+        | NoSauceOnTop
 
     type Fixings =
-        | Empty
-        | Features of Feature List
+        private
+        | Features of Feature list
+
+        static member Create = Features []
+
+    module Fixings =
+        let add (fixings: Fixings) (toAdd: Feature) =
+            match (toAdd, fixings) with
+            | (Empty, Features(_ :: _)) -> System.InvalidOperationException() |> raise
+            | (MeatStrips, Features fs) when List.contains NoMeatStrips fs ->
+                System.InvalidOperationException() |> raise
+            | (NoMeatStrips, Features fs) when List.contains MeatStrips fs ->
+                System.InvalidOperationException() |> raise
+            | (Rice, Features fs) when List.contains NoRice fs -> System.InvalidOperationException() |> raise
+            | (NoRice, Features fs) when List.contains Rice fs -> System.InvalidOperationException() |> raise
+            | (SauceOnTop, Features fs) when List.contains NoSauceOnTop fs ->
+                System.InvalidOperationException() |> raise
+            | (NoSauceOnTop, Features fs) when List.contains SauceOnTop fs ->
+                System.InvalidOperationException() |> raise
+            | (f, Features fs) -> Features(f :: fs)
+
+        let adheresTo (fixings: Fixings) (wanted: Feature list) =
+            match fixings with
+            | Features x when x.Length = wanted.Length && List.forall (fun w -> List.contains w x) wanted -> true
+            | _ -> false
+
 
     type SizeAndShape =
         | SmallTrianglesOvalsOrRectangles
@@ -64,15 +92,10 @@ module Model =
         { NextQuestion: Question option
           Tortilla: Tortilla }
 
-    [<RequireQualifiedAccess>]
-    type ChosenFixing =
-        | Empty
-        | Fixing of Feature
-
     type Msg =
         | ChooseCondition of Condition
         | ChooseSizeAndShap of SizeAndShape
-        | ChooseFixings of ChosenFixing
+        | ChooseFixings of Feature
         | ChooseIsFried of bool
         | ChooseFolding of Folding
         | Restart
@@ -95,12 +118,14 @@ module State =
         =
         match (model.Condition, model.SizeAndShape, model.Fixings, model.Folding, model.Fried) with
         | (Some Soft, None, None, None, None) -> WhatsInsideChoiceNeeded
-        | (Some Soft, None, Some(Features [ Meat ]), None, None) -> AnyRiceChoiceNeeded
-        | (Some Soft, None, Some(Features [ Meat; Rice true ]), None, None) -> FriedChoiceNeeded
-        | (Some Soft, None, Some(Features [ Meat; Rice false ]), Some Roundish, None) -> FriedChoiceNeeded
-        | (Some Soft, None, Some(Features [ Meat; Rice false ]), None, None) -> FoldingChoiceNeeded
-        | (Some Soft, None, Some(Features [ Meat; Rice false ]), Some FlatFolded, None) -> StripsOfMeatChoiceNeeded
-        | (Some Soft, None, Some(Features [ Meat; Rice false; MeatStrips true ]), Some FlatFolded, None) ->
+        | (Some Soft, None, Some fs, None, None) when Fixings.adheresTo fs [ Meat ] -> AnyRiceChoiceNeeded
+        | (Some Soft, None, Some fs, None, None) when Fixings.adheresTo fs [ Meat; Rice ] -> FriedChoiceNeeded
+        | (Some Soft, None, Some fs, Some Roundish, None) when Fixings.adheresTo fs [ Meat; NoRice ] ->
+            FriedChoiceNeeded
+        | (Some Soft, None, Some fs, None, None) when Fixings.adheresTo fs [ Meat; NoRice ] -> FoldingChoiceNeeded
+        | (Some Soft, None, Some fs, Some FlatFolded, None) when Fixings.adheresTo fs [ Meat; NoRice ] ->
+            StripsOfMeatChoiceNeeded
+        | (Some Soft, None, Some fs, Some FlatFolded, None) when Fixings.adheresTo fs [ Meat; NoRice; MeatStrips ] ->
             SauceChoiceNeeded
         | _ -> NoQuestionLeft
 
@@ -121,26 +146,29 @@ module State =
         match (model.Condition, model.Folding, model.Fried, model.Fixings, model.SizeAndShape) with
         | (Some Crunchy, None, None, None, Some SmallTrianglesOvalsOrRectangles) -> ItsNachos
         | (Some Crunchy, None, None, None, Some RolledUp) -> ItsTaquito
-        | (Some Crunchy, None, None, Some(Features [ Meat ]), Some Handsized) -> ItsTaco
-        | (Some Soft, Some Roundish, Some false, Some(Features [ Meat; Rice false ]), _) -> ItsTaco
-        | (Some Soft, Some FlatFolded, None, Some(Features [ Meat; Rice false; MeatStrips false ]), _) -> ItsTaco
-        | (Some Crunchy, None, None, Some Empty, Some Handsized) -> ItsEmptyTacoShell
+        | (Some Crunchy, None, None, Some fs, Some Handsized) when Fixings.adheresTo fs [ Meat ] -> ItsTaco
+        | (Some Soft, Some Roundish, Some false, Some fs, _) when Fixings.adheresTo fs [ Meat; NoRice ] -> ItsTaco
+        | (Some Soft, Some FlatFolded, None, Some fs, _) when Fixings.adheresTo fs [ Meat; NoRice; NoMeatStrips ] ->
+            ItsTaco
+        | (Some Crunchy, None, None, Some fs, Some Handsized) when Fixings.adheresTo fs [ Empty ] -> ItsEmptyTacoShell
         | _ -> ItsNone
 
     let (|ItsTortillaSoup|ItsQuesadilla|ItsBurrito|ItsChimichanga|ItsEnchilada|ItsFajita|ItsNone|) model =
         match (model.Condition, model.Folding, model.Fried, model.Fixings, model.SizeAndShape) with
-        | (Some Soft, None, None, Some(Features [ Soup ]), None) -> ItsTortillaSoup
-        | (Some Soft, None, None, Some(Features [ Cheese ]), None) -> ItsQuesadilla
-        | (Some Soft, None, Some false, Some(Features [ Meat; Rice true ]), None) -> ItsBurrito
-        | (Some Soft, None, Some true, Some(Features [ Meat; Rice true ]), None) -> ItsChimichanga
-        | (Some Soft, Some Roundish, Some true, Some(Features [ Meat; Rice false ]), None) -> ItsChimichanga
-        | (Some Soft, Some FlatFolded, None, Some(Features [ Meat; Rice false; MeatStrips true; SauceOnTop true ]), None) ->
+        | (Some Soft, None, None, Some fs, None) when Fixings.adheresTo fs [ Soup ] -> ItsTortillaSoup
+        | (Some Soft, None, None, Some fs, None) when Fixings.adheresTo fs [ Cheese ] -> ItsQuesadilla
+        | (Some Soft, None, Some false, Some fs, None) when Fixings.adheresTo fs [ Meat; Rice ] -> ItsBurrito
+        | (Some Soft, None, Some true, Some fs, None) when Fixings.adheresTo fs [ Meat; Rice ] -> ItsChimichanga
+        | (Some Soft, Some Roundish, Some true, Some fs, None) when Fixings.adheresTo fs [ Meat; NoRice ] ->
+            ItsChimichanga
+        | (Some Soft, Some FlatFolded, None, Some fs, None) when
+            Fixings.adheresTo fs [ Meat; NoRice; MeatStrips; SauceOnTop ]
+            ->
             ItsEnchilada
-        | (Some Soft,
-           Some FlatFolded,
-           None,
-           Some(Features [ Meat; Rice false; MeatStrips true; SauceOnTop false ]),
-           None) -> ItsFajita
+        | (Some Soft, Some FlatFolded, None, Some fs, None) when
+            Fixings.adheresTo fs [ Meat; NoRice; MeatStrips; NoSauceOnTop ]
+            ->
+            ItsFajita
         | _ -> ItsNone
 
     let determineComida model =
@@ -192,13 +220,11 @@ module State =
             (model', Cmd.none)
         | ChooseFixings x ->
             let fixings' =
-                match (model.Tortilla.Fixings, x) with
-                | (_, ChosenFixing.Empty) -> Some Empty
-                | (None, ChosenFixing.Fixing f) -> Some(Features [ f ])
-                | (Some Empty, ChosenFixing.Fixing f) -> Some(Features [ f ])
-                | (Some(Features fs), ChosenFixing.Fixing f) -> Some(Features(List.append fs [ f ]))
+                match model.Tortilla.Fixings with
+                | None -> Fixings.add Fixings.Create x
+                | Some fs -> Fixings.add fs x
 
-            let tortilla = { model.Tortilla with Fixings = fixings' }
+            let tortilla = { model.Tortilla with Fixings = Some fixings' }
 
             let model' =
                 { model with
@@ -292,21 +318,21 @@ module View =
 
     let isMeatInsideButtons dispatch =
         [ Html.p "Is there meat inside?"
-          button "Darn tootin'! (Yes)" (ChooseFixings(ChosenFixing.Fixing Meat)) dispatch
-          button "No. It's empty." (ChooseFixings ChosenFixing.Empty) dispatch ]
+          button "Darn tootin'! (Yes)" (ChooseFixings Meat) dispatch
+          button "No. It's empty." (ChooseFixings Empty) dispatch ]
         |> Bulma.box
 
     let whatsInsideButtons dispatch =
         [ Html.p "What's inside?"
-          button "mostly meat" (ChooseFixings(ChosenFixing.Fixing Meat)) dispatch
-          button "mostly cheese" (ChooseFixings(ChosenFixing.Fixing Cheese)) dispatch
-          button "This is a SOUP!" (ChooseFixings(ChosenFixing.Fixing Soup)) dispatch ]
+          button "mostly meat" (ChooseFixings Meat) dispatch
+          button "mostly cheese" (ChooseFixings Cheese) dispatch
+          button "This is a SOUP!" (ChooseFixings Soup) dispatch ]
         |> Bulma.box
 
     let anyRiceButtons dispatch =
         [ Html.p "Any rice?"
-          button "yup" (ChosenFixing.Fixing(Rice true) |> ChooseFixings) dispatch
-          button "negative" (ChosenFixing.Fixing(Rice false) |> ChooseFixings) dispatch ]
+          button "yup" (ChooseFixings Rice) dispatch
+          button "negative" (ChooseFixings NoRice) dispatch ]
         |> Bulma.box
 
     let isFriedButtons dispatch =
@@ -323,14 +349,14 @@ module View =
 
     let hasStripsOfMeatButtons dispatch =
         [ Html.p "Strips of meat?"
-          button "no" (ChosenFixing.Fixing(MeatStrips false) |> ChooseFixings) dispatch
-          button "yeah, actually" (ChosenFixing.Fixing(MeatStrips true) |> ChooseFixings) dispatch ]
+          button "no" (ChooseFixings NoMeatStrips) dispatch
+          button "yeah, actually" (ChooseFixings MeatStrips) dispatch ]
         |> Bulma.box
 
     let hasSauceOnTopButtons dispatch =
         [ Html.p "Sauce on top?"
-          button "no" (ChosenFixing.Fixing(SauceOnTop false) |> ChooseFixings) dispatch
-          button "yes" (ChosenFixing.Fixing(SauceOnTop true) |> ChooseFixings) dispatch ]
+          button "no" (ChooseFixings NoSauceOnTop) dispatch
+          button "yes" (ChooseFixings SauceOnTop) dispatch ]
         |> Bulma.box
 
     [<ReactComponent>]
