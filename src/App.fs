@@ -22,29 +22,29 @@ module Model =
 
     type Fixings =
         private
-        | Features of Feature list
+        | Features of Feature Set
 
-        static member Create = Features []
+        static member Create = Features Set.empty
 
     module Fixings =
         let add (fixings: Fixings) (toAdd: Feature) =
             match (toAdd, fixings) with
-            | (Empty, Features(_ :: _)) -> System.InvalidOperationException() |> raise
-            | (MeatStrips, Features fs) when List.contains NoMeatStrips fs ->
+            | (Empty, Features fs) when not (Set.isEmpty fs) -> System.InvalidOperationException() |> raise
+            | (MeatStrips, Features fs) when Set.contains NoMeatStrips fs ->
                 System.InvalidOperationException() |> raise
-            | (NoMeatStrips, Features fs) when List.contains MeatStrips fs ->
+            | (NoMeatStrips, Features fs) when Set.contains MeatStrips fs ->
                 System.InvalidOperationException() |> raise
-            | (Rice, Features fs) when List.contains NoRice fs -> System.InvalidOperationException() |> raise
-            | (NoRice, Features fs) when List.contains Rice fs -> System.InvalidOperationException() |> raise
-            | (SauceOnTop, Features fs) when List.contains NoSauceOnTop fs ->
+            | (Rice, Features fs) when Set.contains NoRice fs -> System.InvalidOperationException() |> raise
+            | (NoRice, Features fs) when Set.contains Rice fs -> System.InvalidOperationException() |> raise
+            | (SauceOnTop, Features fs) when Set.contains NoSauceOnTop fs ->
                 System.InvalidOperationException() |> raise
-            | (NoSauceOnTop, Features fs) when List.contains SauceOnTop fs ->
+            | (NoSauceOnTop, Features fs) when Set.contains SauceOnTop fs ->
                 System.InvalidOperationException() |> raise
-            | (f, Features fs) -> Features(f :: fs)
+            | (f, Features fs) -> Features (Set.add f fs)
 
         let adheresTo (fixings: Fixings) (wanted: Feature list) =
             match fixings with
-            | Features x when x.Length = wanted.Length && List.forall (fun w -> List.contains w x) wanted -> true
+            | Features fs when fs = Set.ofList wanted -> true
             | _ -> false
 
 
