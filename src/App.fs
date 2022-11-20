@@ -2,6 +2,8 @@ module App
 
 module Model =
 
+    open System.Collections.Generic
+
     type Folding =
         | Roundish
         | FlatFolded
@@ -30,17 +32,13 @@ module Model =
         let add (fixings: Fixings) (toAdd: Feature) =
             match (toAdd, fixings) with
             | (Empty, Features fs) when not (Set.isEmpty fs) -> System.InvalidOperationException() |> raise
-            | (MeatStrips, Features fs) when Set.contains NoMeatStrips fs ->
-                System.InvalidOperationException() |> raise
-            | (NoMeatStrips, Features fs) when Set.contains MeatStrips fs ->
-                System.InvalidOperationException() |> raise
+            | (MeatStrips, Features fs) when Set.contains NoMeatStrips fs -> System.InvalidOperationException() |> raise
+            | (NoMeatStrips, Features fs) when Set.contains MeatStrips fs -> System.InvalidOperationException() |> raise
             | (Rice, Features fs) when Set.contains NoRice fs -> System.InvalidOperationException() |> raise
             | (NoRice, Features fs) when Set.contains Rice fs -> System.InvalidOperationException() |> raise
-            | (SauceOnTop, Features fs) when Set.contains NoSauceOnTop fs ->
-                System.InvalidOperationException() |> raise
-            | (NoSauceOnTop, Features fs) when Set.contains SauceOnTop fs ->
-                System.InvalidOperationException() |> raise
-            | (f, Features fs) -> Features (Set.add f fs)
+            | (SauceOnTop, Features fs) when Set.contains NoSauceOnTop fs -> System.InvalidOperationException() |> raise
+            | (NoSauceOnTop, Features fs) when Set.contains SauceOnTop fs -> System.InvalidOperationException() |> raise
+            | (f, Features fs) -> Features(Set.add f fs)
 
         let adheresTo (fixings: Fixings) (wanted: Feature list) =
             match fixings with
@@ -90,7 +88,8 @@ module Model =
 
     type Model =
         { NextQuestion: Question option
-          Tortilla: Tortilla }
+          Tortilla: Tortilla
+          History: Stack<Model> }
 
     type Msg =
         | ChooseCondition of Condition
@@ -99,9 +98,11 @@ module Model =
         | ChooseIsFried of bool
         | ChooseFolding of Folding
         | Restart
+        | GoBack
 
 module State =
 
+    open System.Collections.Generic
     open Elmish
 
     open Model
@@ -194,7 +195,8 @@ module State =
                   Fried = None
                   Fixings = None
                   SizeAndShape = None
-                  Comida = None } }
+                  Comida = None }
+              History = Stack<Model>() }
 
         (model, Cmd.none)
 
@@ -208,6 +210,8 @@ module State =
                     NextQuestion = nextQuestion tortilla
                     Tortilla = { tortilla with Comida = determineComida tortilla } }
 
+            model'.History.Push(model')
+
             (model', Cmd.none)
         | ChooseSizeAndShap s ->
             let tortilla = { model.Tortilla with SizeAndShape = Some s }
@@ -216,6 +220,8 @@ module State =
                 { model with
                     NextQuestion = nextQuestion tortilla
                     Tortilla = { tortilla with Comida = determineComida tortilla } }
+
+            model'.History.Push(model')
 
             (model', Cmd.none)
         | ChooseFixings x ->
@@ -231,6 +237,7 @@ module State =
                     NextQuestion = nextQuestion tortilla
                     Tortilla = { tortilla with Comida = determineComida tortilla } }
 
+            model'.History.Push(model')
             (model', Cmd.none)
         | ChooseIsFried b ->
             let tortilla = { model.Tortilla with Fried = Some b }
@@ -240,6 +247,7 @@ module State =
                     NextQuestion = nextQuestion tortilla
                     Tortilla = { tortilla with Comida = determineComida tortilla } }
 
+            model'.History.Push(model')
             (model', Cmd.none)
         | ChooseFolding f ->
             let tortilla = { model.Tortilla with Folding = Some f }
@@ -249,8 +257,16 @@ module State =
                     NextQuestion = nextQuestion tortilla
                     Tortilla = { tortilla with Comida = determineComida tortilla } }
 
+            model'.History.Push(model')
             (model', Cmd.none)
         | Restart -> init ()
+        | GoBack ->
+            if model.History.Count >= 2 then
+                model.History.Pop() |> ignore
+                let currentModel = model.History.Peek()
+                (currentModel, Cmd.none)
+            else
+                init ()
 
 module View =
 
@@ -393,7 +409,12 @@ module View =
               | None -> ()
 
           Bulma.box [ Html.textarea [ prop.value description ] ]
-          Bulma.box [ button "Restart" Restart dispatch ] ]
+          Bulma.box
+              [ button "Restart" Restart dispatch
+                Bulma.button.button
+                    [ prop.text "Go back"
+                      prop.onClick (fun _ -> GoBack |> dispatch)
+                      prop.disabled (state.History.Count <= 0) ] ] ]
         |> Html.div
 
 open Browser.Dom
