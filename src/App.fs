@@ -86,9 +86,12 @@ module Model =
           SizeAndShape: SizeAndShape option
           Comida: Comida option }
 
+    type TimelineEntry = { Question: string; Answer: string }
+
     type Model =
         { NextQuestion: Question option
           Tortilla: Tortilla
+          Timeline: TimelineEntry list
           History: Stack<Model> }
 
     type Msg =
@@ -196,6 +199,7 @@ module State =
                   Fixings = None
                   SizeAndShape = None
                   Comida = None }
+              Timeline = List.empty
               History = Stack<Model>() }
 
         (model, Cmd.none)
@@ -208,10 +212,13 @@ module State =
             let model' =
                 { model with
                     NextQuestion = nextQuestion tortilla
+                    Timeline =
+                        model.Timeline
+                        @ [ { Question = "Condition"
+                              Answer = string c } ]
                     Tortilla = { tortilla with Comida = determineComida tortilla } }
 
             model'.History.Push(model')
-
             (model', Cmd.none)
         | ChooseSizeAndShap s ->
             let tortilla = { model.Tortilla with SizeAndShape = Some s }
@@ -219,10 +226,13 @@ module State =
             let model' =
                 { model with
                     NextQuestion = nextQuestion tortilla
+                    Timeline =
+                        model.Timeline
+                        @ [ { Question = "SizeAndShape"
+                              Answer = string s } ]
                     Tortilla = { tortilla with Comida = determineComida tortilla } }
 
             model'.History.Push(model')
-
             (model', Cmd.none)
         | ChooseFixings x ->
             let fixings' =
@@ -235,6 +245,10 @@ module State =
             let model' =
                 { model with
                     NextQuestion = nextQuestion tortilla
+                    Timeline =
+                        model.Timeline
+                        @ [ { Question = "Fixing"
+                              Answer = string x } ]
                     Tortilla = { tortilla with Comida = determineComida tortilla } }
 
             model'.History.Push(model')
@@ -245,6 +259,10 @@ module State =
             let model' =
                 { model with
                     NextQuestion = nextQuestion tortilla
+                    Timeline =
+                        model.Timeline
+                        @ [ { Question = "Fried"
+                              Answer = string b } ]
                     Tortilla = { tortilla with Comida = determineComida tortilla } }
 
             model'.History.Push(model')
@@ -255,6 +273,10 @@ module State =
             let model' =
                 { model with
                     NextQuestion = nextQuestion tortilla
+                    Timeline =
+                        model.Timeline
+                        @ [ { Question = "Folding"
+                              Answer = string f } ]
                     Tortilla = { tortilla with Comida = determineComida tortilla } }
 
             model'.History.Push(model')
@@ -270,6 +292,7 @@ module State =
 
 module View =
 
+    open System.Collections.Generic
     open Feliz
     open Feliz.Bulma
     open Feliz.UseElmish
@@ -375,6 +398,12 @@ module View =
           button "yes" (ChooseFixings SauceOnTop) dispatch ]
         |> Bulma.box
 
+    let timeline entries =
+        Bulma.box
+            [ Html.unorderedList
+                  [ for e in entries do
+                        Html.listItem [ Html.p $"{e.Question}? {e.Answer}" ] ] ]
+
     [<ReactComponent>]
     let ViewComp () =
 
@@ -408,13 +437,13 @@ module View =
               | Some HasSauceOnTop -> hasSauceOnTopButtons dispatch
               | None -> ()
 
-          Bulma.box [ Html.textarea [ prop.value description ] ]
           Bulma.box
               [ button "Restart" Restart dispatch
                 Bulma.button.button
                     [ prop.text "Go back"
                       prop.onClick (fun _ -> GoBack |> dispatch)
-                      prop.disabled (state.History.Count <= 0) ] ] ]
+                      prop.disabled (state.History.Count <= 0) ] ]
+          timeline state.Timeline ]
         |> Html.div
 
 open Browser.Dom
