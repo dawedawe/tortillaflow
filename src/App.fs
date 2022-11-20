@@ -136,6 +136,11 @@ module Questions =
                ("yeah, actually", ChooseFixings MeatStrips) ])
         | HasSauceOnTop -> ("Sauce on top?", [ ("no", ChooseFixings NoSauceOnTop); ("yes", ChooseFixings SauceOnTop) ])
 
+    let getTimelineEntryForMsg question msg =
+        let q, answers = getQuestion question
+        let a = answers |> List.find (fun (_, aMsg) -> aMsg = msg) |> fst
+        { Question = q; Answer = a }
+
 module State =
 
     open System.Collections.Generic
@@ -241,28 +246,24 @@ module State =
         match msg with
         | ChooseCondition c ->
             let tortilla = { model.Tortilla with Condition = Some c }
+            let timelineEntry = Questions.getTimelineEntryForMsg model.NextQuestion.Value msg
 
             let model' =
                 { model with
                     NextQuestion = nextQuestion tortilla
-                    Timeline =
-                        model.Timeline
-                        @ [ { Question = "Condition"
-                              Answer = string c } ]
+                    Timeline = timelineEntry :: model.Timeline
                     Tortilla = { tortilla with Comida = determineComida tortilla } }
 
             model'.History.Push(model')
             (model', Cmd.none)
         | ChooseSizeAndShap s ->
             let tortilla = { model.Tortilla with SizeAndShape = Some s }
+            let timelineEntry = Questions.getTimelineEntryForMsg model.NextQuestion.Value msg
 
             let model' =
                 { model with
                     NextQuestion = nextQuestion tortilla
-                    Timeline =
-                        model.Timeline
-                        @ [ { Question = "SizeAndShape"
-                              Answer = string s } ]
+                    Timeline = timelineEntry :: model.Timeline
                     Tortilla = { tortilla with Comida = determineComida tortilla } }
 
             model'.History.Push(model')
@@ -274,42 +275,36 @@ module State =
                 | Some fs -> Fixings.add fs x
 
             let tortilla = { model.Tortilla with Fixings = Some fixings' }
+            let timelineEntry = Questions.getTimelineEntryForMsg model.NextQuestion.Value msg
 
             let model' =
                 { model with
                     NextQuestion = nextQuestion tortilla
-                    Timeline =
-                        model.Timeline
-                        @ [ { Question = "Fixing"
-                              Answer = string x } ]
+                    Timeline = timelineEntry :: model.Timeline
                     Tortilla = { tortilla with Comida = determineComida tortilla } }
 
             model'.History.Push(model')
             (model', Cmd.none)
         | ChooseIsFried b ->
             let tortilla = { model.Tortilla with Fried = Some b }
+            let timelineEntry = Questions.getTimelineEntryForMsg model.NextQuestion.Value msg
 
             let model' =
                 { model with
                     NextQuestion = nextQuestion tortilla
-                    Timeline =
-                        model.Timeline
-                        @ [ { Question = "Fried"
-                              Answer = string b } ]
+                    Timeline = timelineEntry :: model.Timeline
                     Tortilla = { tortilla with Comida = determineComida tortilla } }
 
             model'.History.Push(model')
             (model', Cmd.none)
         | ChooseFolding f ->
             let tortilla = { model.Tortilla with Folding = Some f }
+            let timelineEntry = Questions.getTimelineEntryForMsg model.NextQuestion.Value msg
 
             let model' =
                 { model with
                     NextQuestion = nextQuestion tortilla
-                    Timeline =
-                        model.Timeline
-                        @ [ { Question = "Folding"
-                              Answer = string f } ]
+                    Timeline = timelineEntry :: model.Timeline
                     Tortilla = { tortilla with Comida = determineComida tortilla } }
 
             model'.History.Push(model')
@@ -390,7 +385,7 @@ module View =
                 [ Html.h1 [ prop.text "Your choices" ]
                   Html.unorderedList
                       [ for e in entries do
-                            Html.listItem [ Html.p $"{e.Question}? {e.Answer}" ] ] ]
+                            Html.listItem [ Html.p $"{e.Question} {e.Answer}" ] ] ]
 
     [<ReactComponent>]
     let ViewComp () =
