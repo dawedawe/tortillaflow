@@ -45,7 +45,6 @@ module Model =
             | Features fs when fs = Set.ofList wanted -> true
             | _ -> false
 
-
     type SizeAndShape =
         | SmallTrianglesOvalsOrRectangles
         | RolledUp
@@ -69,7 +68,7 @@ module Model =
 
     type Question =
         | WhatCondition
-        | WhatSizeAndShape
+        | WhatShapeAndSize
         | IsMeatInside
         | WhatsInside
         | AnyRice
@@ -102,6 +101,40 @@ module Model =
         | ChooseFolding of Folding
         | Restart
         | GoBack
+
+module Questions =
+
+    open Model
+
+    let getQuestion q =
+        match q with
+        | WhatCondition ->
+            ("What is your tortilla like?", [ ("soft", ChooseCondition Soft); ("crunchy", ChooseCondition Crunchy) ])
+        | WhatShapeAndSize ->
+            ("What shape and size?",
+             [ ("small triangles, ovals or rectangles", ChooseSizeAndShap SmallTrianglesOvalsOrRectangles)
+               ("But I can't tell, it's all rolled up!", ChooseSizeAndShap RolledUp)
+               ("The size of someone's hand I guess.", ChooseSizeAndShap Handsized) ])
+        | IsMeatInside ->
+            ("Is there meat inside?",
+             [ ("Darn tootin'! (Yes)", ChooseFixings Meat)
+               ("No. It's empty.", ChooseFixings Empty) ])
+        | WhatsInside ->
+            ("What's inside?",
+             [ ("mostly meat", ChooseFixings Meat)
+               ("mostly cheese", ChooseFixings Cheese)
+               ("This is a SOUP!", ChooseFixings Soup) ])
+        | AnyRice -> ("Any rice?", [ ("yup", ChooseFixings Rice); ("negative", ChooseFixings NoRice) ])
+        | IsFried -> ("Is it fried?", [ ("yes", ChooseIsFried true); ("gross. no.", ChooseIsFried false) ])
+        | WhatFolding ->
+            ("How is it folded?",
+             [ ("round-ish", ChooseFolding Roundish)
+               ("flat, folded in half", ChooseFolding FlatFolded) ])
+        | HasStripsOfMeat ->
+            ("Strips of meat?",
+             [ ("no", ChooseFixings NoMeatStrips)
+               ("yeah, actually", ChooseFixings MeatStrips) ])
+        | HasSauceOnTop -> ("Sauce on top?", [ ("no", ChooseFixings NoSauceOnTop); ("yes", ChooseFixings SauceOnTop) ])
 
 module State =
 
@@ -136,7 +169,7 @@ module State =
     let nextQuestion tortilla =
         match tortilla with
         | ConditionChoiceNeeded -> Some WhatCondition
-        | SizeAndShapeChoiceNeeded -> Some WhatSizeAndShape
+        | SizeAndShapeChoiceNeeded -> Some WhatShapeAndSize
         | MeatInsideChoiceNeeded -> Some IsMeatInside
         | WhatsInsideChoiceNeeded -> Some WhatsInside
         | AnyRiceChoiceNeeded -> Some AnyRice
@@ -292,7 +325,6 @@ module State =
 
 module View =
 
-    open System.Collections.Generic
     open Feliz
     open Feliz.Bulma
     open Feliz.UseElmish
@@ -342,100 +374,37 @@ module View =
                                 Html.p "Buen provecho :)" ]
                           Bulma.column [ Html.img [ prop.src url ] ] ] ] ]
 
-    let whatConditionButtons dispatch =
-        [ Html.p "What is your tortilla like?"
-          button "soft" (ChooseCondition Soft) dispatch
-          button "crunchy" (ChooseCondition Crunchy) dispatch ]
-        |> Bulma.box
+    let questionButtons question dispatch =
+        let (q, answers) = Questions.getQuestion question
 
-    let whatSizeAndShapeButtons dispatch =
-        [ Html.p "What shape and size?"
-          button "small triangles, ovals or rectangles" (ChooseSizeAndShap SmallTrianglesOvalsOrRectangles) dispatch
-          button "But I can't tell, it's all rolled up!" (ChooseSizeAndShap RolledUp) dispatch
-          button "The size of someone's hand I guess." (ChooseSizeAndShap Handsized) dispatch ]
-        |> Bulma.box
-
-    let isMeatInsideButtons dispatch =
-        [ Html.p "Is there meat inside?"
-          button "Darn tootin'! (Yes)" (ChooseFixings Meat) dispatch
-          button "No. It's empty." (ChooseFixings Empty) dispatch ]
-        |> Bulma.box
-
-    let whatsInsideButtons dispatch =
-        [ Html.p "What's inside?"
-          button "mostly meat" (ChooseFixings Meat) dispatch
-          button "mostly cheese" (ChooseFixings Cheese) dispatch
-          button "This is a SOUP!" (ChooseFixings Soup) dispatch ]
-        |> Bulma.box
-
-    let anyRiceButtons dispatch =
-        [ Html.p "Any rice?"
-          button "yup" (ChooseFixings Rice) dispatch
-          button "negative" (ChooseFixings NoRice) dispatch ]
-        |> Bulma.box
-
-    let isFriedButtons dispatch =
-        [ Html.p "Is it fried?"
-          button "yes" (ChooseIsFried true) dispatch
-          button "gross. no." (ChooseIsFried false) dispatch ]
-        |> Bulma.box
-
-    let whatFoldingButtons dispatch =
-        [ Html.p "How is it folded?"
-          button "round-ish" (ChooseFolding Roundish) dispatch
-          button "flat, folded in half" (ChooseFolding FlatFolded) dispatch ]
-        |> Bulma.box
-
-    let hasStripsOfMeatButtons dispatch =
-        [ Html.p "Strips of meat?"
-          button "no" (ChooseFixings NoMeatStrips) dispatch
-          button "yeah, actually" (ChooseFixings MeatStrips) dispatch ]
-        |> Bulma.box
-
-    let hasSauceOnTopButtons dispatch =
-        [ Html.p "Sauce on top?"
-          button "no" (ChooseFixings NoSauceOnTop) dispatch
-          button "yes" (ChooseFixings SauceOnTop) dispatch ]
+        [ Html.p q
+          for (a, aMsg) in answers do
+              button a aMsg dispatch ]
         |> Bulma.box
 
     let timeline entries =
-        Bulma.box
-            [ Html.unorderedList
-                  [ for e in entries do
-                        Html.listItem [ Html.p $"{e.Question}? {e.Answer}" ] ] ]
+        if List.isEmpty entries then
+            Html.none
+        else
+            Bulma.box
+                [ Html.h1 [ prop.text "Your choices" ]
+                  Html.unorderedList
+                      [ for e in entries do
+                            Html.listItem [ Html.p $"{e.Question}? {e.Answer}" ] ] ]
 
     [<ReactComponent>]
     let ViewComp () =
 
         let state, dispatch = React.useElmish (State.init, State.update, [||])
 
-        let description =
-            $"Condition {string state.Tortilla.Condition}"
-            + "\n"
-            + $"SizeAndShape {string state.Tortilla.SizeAndShape}"
-            + "\n"
-            + $"Fixings {string state.Tortilla.Fixings}"
-            + "\n"
-            + $"Fried {string state.Tortilla.Fried}"
-            + "\n"
-            + $"Folding {string state.Tortilla.Folding}"
-
         [ Bulma.title "Tortilla flow"
 
           if Option.isSome state.Tortilla.Comida then
               result state.Tortilla.Comida.Value
+          else if Option.isSome state.NextQuestion then
+              questionButtons state.NextQuestion.Value dispatch
           else
-              match state.NextQuestion with
-              | Some WhatCondition -> whatConditionButtons dispatch
-              | Some WhatSizeAndShape -> whatSizeAndShapeButtons dispatch
-              | Some IsMeatInside -> isMeatInsideButtons dispatch
-              | Some WhatsInside -> whatsInsideButtons dispatch
-              | Some AnyRice -> anyRiceButtons dispatch
-              | Some IsFried -> isFriedButtons dispatch
-              | Some WhatFolding -> whatFoldingButtons dispatch
-              | Some HasStripsOfMeat -> hasStripsOfMeatButtons dispatch
-              | Some HasSauceOnTop -> hasSauceOnTopButtons dispatch
-              | None -> ()
+              ()
 
           Bulma.box
               [ button "Restart" Restart dispatch
