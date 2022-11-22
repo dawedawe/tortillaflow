@@ -372,10 +372,10 @@ module View =
     let renderQuestion question dispatch =
         let (q, answers) = Questions.getQuestion question
 
-        [ Html.div [ Html.strong q ]
-          for (a, aMsg) in answers do
-              button a aMsg dispatch ]
-        |> Bulma.box
+        Html.div
+            [ Html.div [ Html.strong q ]
+              for (a, aMsg) in answers do
+                  button a aMsg dispatch ]
 
     let renderTimeline entries =
         Bulma.box
@@ -385,25 +385,31 @@ module View =
                         Html.listItem [ Html.p $"{e.Question}"; Html.strong $"{e.Answer}" ]
                         Html.br [] ] ]
 
+    let renderLeft state dispatch =
+        Bulma.card
+            [ Bulma.cardContent
+                  [ if Option.isSome state.Tortilla.Comida then
+                        renderResult state.Tortilla.Comida.Value
+                    else if Option.isSome state.NextQuestion then
+                        renderQuestion state.NextQuestion.Value dispatch
+                    else
+                        () ]
+              Bulma.cardFooter
+                  [ Bulma.cardFooterItem.div
+                        [ Bulma.button.button
+                              [ prop.text "Previous question"
+                                prop.onClick (fun _ -> GoBack |> dispatch)
+                                Bulma.color.isInfo
+                                prop.disabled (state.History.Count <= 0) ] ] ] ]
+
     let renderCard state dispatch =
         Bulma.card
             [ Bulma.cardContent
                   [ Bulma.columns
-                        [ Bulma.column
-                              [ if Option.isSome state.Tortilla.Comida then
-                                    renderResult state.Tortilla.Comida.Value
-                                else if Option.isSome state.NextQuestion then
-                                    renderQuestion state.NextQuestion.Value dispatch
-                                else
-                                    () ]
+                        [ Bulma.column [ renderLeft state dispatch ]
                           Bulma.column [ renderTimeline state.Timeline ] ] ]
               Bulma.cardFooter
                   [ Bulma.cardFooterItem.div
-                        [ Bulma.button.button
-                              [ prop.text "Go back"
-                                prop.onClick (fun _ -> GoBack |> dispatch)
-                                prop.disabled (state.History.Count <= 0) ] ]
-                    Bulma.cardFooterItem.div
                         [ Bulma.button.button [ prop.text "Restart"; prop.onClick (fun _ -> Restart |> dispatch) ] ] ] ]
 
     [<ReactComponent>]
