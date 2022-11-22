@@ -108,8 +108,7 @@ module Questions =
 
     let getQuestion q =
         match q with
-        | WhatCondition ->
-            ("What is your tortilla like?", [ ("soft", ChooseCondition Soft); ("crunchy", ChooseCondition Crunchy) ])
+        | WhatCondition -> ("What is your tortilla like?", [ ("soft", ChooseCondition Soft); ("crunchy", ChooseCondition Crunchy) ])
         | WhatShapeAndSize ->
             ("What shape and size?",
              [ ("small triangles, ovals or rectangles", ChooseSizeAndShap SmallTrianglesOvalsOrRectangles)
@@ -162,13 +161,10 @@ module State =
         | (Some Soft, None, None, None, None) -> WhatsInsideChoiceNeeded
         | (Some Soft, None, Some fs, None, None) when Fixings.adheresTo fs [ Meat ] -> AnyRiceChoiceNeeded
         | (Some Soft, None, Some fs, None, None) when Fixings.adheresTo fs [ Meat; Rice ] -> FriedChoiceNeeded
-        | (Some Soft, None, Some fs, Some Roundish, None) when Fixings.adheresTo fs [ Meat; NoRice ] ->
-            FriedChoiceNeeded
+        | (Some Soft, None, Some fs, Some Roundish, None) when Fixings.adheresTo fs [ Meat; NoRice ] -> FriedChoiceNeeded
         | (Some Soft, None, Some fs, None, None) when Fixings.adheresTo fs [ Meat; NoRice ] -> FoldingChoiceNeeded
-        | (Some Soft, None, Some fs, Some FlatFolded, None) when Fixings.adheresTo fs [ Meat; NoRice ] ->
-            StripsOfMeatChoiceNeeded
-        | (Some Soft, None, Some fs, Some FlatFolded, None) when Fixings.adheresTo fs [ Meat; NoRice; MeatStrips ] ->
-            SauceChoiceNeeded
+        | (Some Soft, None, Some fs, Some FlatFolded, None) when Fixings.adheresTo fs [ Meat; NoRice ] -> StripsOfMeatChoiceNeeded
+        | (Some Soft, None, Some fs, Some FlatFolded, None) when Fixings.adheresTo fs [ Meat; NoRice; MeatStrips ] -> SauceChoiceNeeded
         | _ -> NoQuestionLeft
 
     let nextQuestion tortilla =
@@ -190,8 +186,7 @@ module State =
         | (Some Crunchy, None, None, None, Some RolledUp) -> ItsTaquito
         | (Some Crunchy, None, None, Some fs, Some Handsized) when Fixings.adheresTo fs [ Meat ] -> ItsTaco
         | (Some Soft, Some Roundish, Some false, Some fs, _) when Fixings.adheresTo fs [ Meat; NoRice ] -> ItsTaco
-        | (Some Soft, Some FlatFolded, None, Some fs, _) when Fixings.adheresTo fs [ Meat; NoRice; NoMeatStrips ] ->
-            ItsTaco
+        | (Some Soft, Some FlatFolded, None, Some fs, _) when Fixings.adheresTo fs [ Meat; NoRice; NoMeatStrips ] -> ItsTaco
         | (Some Crunchy, None, None, Some fs, Some Handsized) when Fixings.adheresTo fs [ Empty ] -> ItsEmptyTacoShell
         | _ -> ItsNone
 
@@ -201,16 +196,9 @@ module State =
         | (Some Soft, None, None, Some fs, None) when Fixings.adheresTo fs [ Cheese ] -> ItsQuesadilla
         | (Some Soft, None, Some false, Some fs, None) when Fixings.adheresTo fs [ Meat; Rice ] -> ItsBurrito
         | (Some Soft, None, Some true, Some fs, None) when Fixings.adheresTo fs [ Meat; Rice ] -> ItsChimichanga
-        | (Some Soft, Some Roundish, Some true, Some fs, None) when Fixings.adheresTo fs [ Meat; NoRice ] ->
-            ItsChimichanga
-        | (Some Soft, Some FlatFolded, None, Some fs, None) when
-            Fixings.adheresTo fs [ Meat; NoRice; MeatStrips; SauceOnTop ]
-            ->
-            ItsEnchilada
-        | (Some Soft, Some FlatFolded, None, Some fs, None) when
-            Fixings.adheresTo fs [ Meat; NoRice; MeatStrips; NoSauceOnTop ]
-            ->
-            ItsFajita
+        | (Some Soft, Some Roundish, Some true, Some fs, None) when Fixings.adheresTo fs [ Meat; NoRice ] -> ItsChimichanga
+        | (Some Soft, Some FlatFolded, None, Some fs, None) when Fixings.adheresTo fs [ Meat; NoRice; MeatStrips; SauceOnTop ] -> ItsEnchilada
+        | (Some Soft, Some FlatFolded, None, Some fs, None) when Fixings.adheresTo fs [ Meat; NoRice; MeatStrips; NoSauceOnTop ] -> ItsFajita
         | _ -> ItsNone
 
     let determineComida model =
@@ -328,8 +316,7 @@ module View =
 
     let comidaInfos comida =
         match comida with
-        | Nachos ->
-            ("Nachos", "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Nachos1.jpg/1920px-Nachos1.jpg")
+        | Nachos -> ("Nachos", "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Nachos1.jpg/1920px-Nachos1.jpg")
         | Taquito -> ("Taquito", "https://upload.wikimedia.org/wikipedia/commons/8/8b/Flautas_guacamole_tortillas.jpg")
         | Taco ->
             ("Taco",
@@ -337,21 +324,14 @@ module View =
         | EmptyTacoShell ->
             ("Empty Taco Shells",
              "https://media.istockphoto.com/photos/isolated-taco-shell-picture-id700209484?k=6&m=700209484&s=170667a&w=0&h=kus7mbbg-qZUT_nplZoqXhahc04kNhPq1SgAdLRifL0=")
-        | TortillaSoup ->
-            ("Tortilla Soup",
-             "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Tortilla_Soup.jpg/1920px-Tortilla_Soup.jpg")
+        | TortillaSoup -> ("Tortilla Soup", "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Tortilla_Soup.jpg/1920px-Tortilla_Soup.jpg")
         | Fajita ->
             ("Fajita",
              "https://media.istockphoto.com/photos/chicken-fajitas-picture-id477724063?k=6&m=477724063&s=170667a&w=0&h=ah81Nbum22t41X3R_z_50EymCrOVl0YJzkkefDKO5W0=")
-        | Enchilada ->
-            ("Enchilada", "https://upload.wikimedia.org/wikipedia/commons/b/ba/Festival_de_la_Enchilada_59.jpg")
-        | Quesadilla ->
-            ("Quesadilla",
-             "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Quesadilla_2.jpg/1920px-Quesadilla_2.jpg")
+        | Enchilada -> ("Enchilada", "https://upload.wikimedia.org/wikipedia/commons/b/ba/Festival_de_la_Enchilada_59.jpg")
+        | Quesadilla -> ("Quesadilla", "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Quesadilla_2.jpg/1920px-Quesadilla_2.jpg")
         | Burrito -> ("Burrito", "https://upload.wikimedia.org/wikipedia/commons/1/17/Shredded_pork_burrito.jpg")
-        | Chimichanga ->
-            ("Chimichanga",
-             "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Chimichangas.jpg/1920px-Chimichangas.jpg")
+        | Chimichanga -> ("Chimichanga", "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Chimichangas.jpg/1920px-Chimichangas.jpg")
 
     let renderResult comida =
         let (name, url) = comidaInfos comida
