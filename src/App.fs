@@ -399,18 +399,19 @@ module View =
                         [ Bulma.button.button
                               [ prop.text "Previous question"
                                 prop.onClick (fun _ -> GoBack |> dispatch)
-                                Bulma.color.isInfo
-                                prop.disabled (state.History.Count <= 0) ] ] ] ]
+                                color.isInfo
+                                prop.disabled (state.History.Count <= 0) ]
+                          Bulma.button.button
+                              [ prop.text "Restart"
+                                prop.onClick (fun _ -> Restart |> dispatch)
+                                color.isInfo ] ] ] ]
 
     let renderCard state dispatch =
         Bulma.card
             [ Bulma.cardContent
                   [ Bulma.columns
                         [ Bulma.column [ renderLeft state dispatch ]
-                          Bulma.column [ renderTimeline state.Timeline ] ] ]
-              Bulma.cardFooter
-                  [ Bulma.cardFooterItem.div
-                        [ Bulma.button.button [ prop.text "Restart"; prop.onClick (fun _ -> Restart |> dispatch) ] ] ] ]
+                          Bulma.column [ renderTimeline state.Timeline ] ] ] ]
 
     [<ReactComponent>]
     let ViewComp () =
