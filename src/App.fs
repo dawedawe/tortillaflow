@@ -353,10 +353,7 @@ module View =
             ("Chimichanga",
              "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Chimichangas.jpg/1920px-Chimichangas.jpg")
 
-    let button (text: string) m dispatch =
-        Bulma.button.button [ prop.text text; prop.onClick (fun _ -> m |> dispatch) ]
-
-    let result comida =
+    let renderResult comida =
         let (name, url) = comidaInfos comida
 
         Bulma.box
@@ -369,46 +366,52 @@ module View =
                                 Html.p "Buen provecho :)" ]
                           Bulma.column [ Html.img [ prop.src url ] ] ] ] ]
 
-    let questionButtons question dispatch =
+    let button (text: string) m dispatch =
+        Bulma.button.button [ prop.text text; prop.onClick (fun _ -> m |> dispatch) ]
+
+    let renderQuestion question dispatch =
         let (q, answers) = Questions.getQuestion question
 
-        [ Html.p q
+        [ Html.div [ Html.strong q ]
           for (a, aMsg) in answers do
               button a aMsg dispatch ]
         |> Bulma.box
 
-    let timeline entries =
-        if List.isEmpty entries then
-            Html.none
-        else
-            Bulma.box
-                [ Html.h1 [ prop.text "Your choices" ]
-                  Html.unorderedList
-                      [ for e in entries do
-                            Html.listItem [ Html.p $"{e.Question} {e.Answer}" ] ] ]
+    let renderTimeline entries =
+        Bulma.box
+            [ Html.strong "Your choices"
+              Html.unorderedList
+                  [ for e in entries do
+                        Html.listItem [ Html.p $"{e.Question}"; Html.strong $"{e.Answer}" ]
+                        Html.br [] ] ]
+
+    let renderCard state dispatch =
+        Bulma.card
+            [ Bulma.cardContent
+                  [ Bulma.columns
+                        [ Bulma.column
+                              [ if Option.isSome state.Tortilla.Comida then
+                                    renderResult state.Tortilla.Comida.Value
+                                else if Option.isSome state.NextQuestion then
+                                    renderQuestion state.NextQuestion.Value dispatch
+                                else
+                                    () ]
+                          Bulma.column [ renderTimeline state.Timeline ] ] ]
+              Bulma.cardFooter
+                  [ Bulma.cardFooterItem.div
+                        [ Bulma.button.button
+                              [ prop.text "Go back"
+                                prop.onClick (fun _ -> GoBack |> dispatch)
+                                prop.disabled (state.History.Count <= 0) ] ]
+                    Bulma.cardFooterItem.div
+                        [ Bulma.button.button [ prop.text "Restart"; prop.onClick (fun _ -> Restart |> dispatch) ] ] ] ]
 
     [<ReactComponent>]
     let ViewComp () =
 
         let state, dispatch = React.useElmish (State.init, State.update, [||])
 
-        [ Bulma.title "Tortilla flow"
-
-          if Option.isSome state.Tortilla.Comida then
-              result state.Tortilla.Comida.Value
-          else if Option.isSome state.NextQuestion then
-              questionButtons state.NextQuestion.Value dispatch
-          else
-              ()
-
-          Bulma.box
-              [ button "Restart" Restart dispatch
-                Bulma.button.button
-                    [ prop.text "Go back"
-                      prop.onClick (fun _ -> GoBack |> dispatch)
-                      prop.disabled (state.History.Count <= 0) ] ]
-          timeline state.Timeline ]
-        |> Html.div
+        [ Bulma.title "Tortilla flow"; renderCard state dispatch ] |> Html.div
 
 open Browser.Dom
 open View

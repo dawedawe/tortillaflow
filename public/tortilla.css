@@ -1,3 +1,9 @@
+body {
+    max-width: 1200px;
+    align-content: center;
+    margin: auto;
+}
+
 box {
     margin: 10px;
 }
@@ -24,12 +30,6 @@ button {
 
 p {
     margin: 10px;
-}
-
-textarea {
-    margin: 10px;
-    height: 150px;
-    width: 300px;
 }
 
 h1 {
