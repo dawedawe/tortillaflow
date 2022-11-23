@@ -347,7 +347,7 @@ module View =
                           Bulma.column [ Html.img [ prop.src url ] ] ] ] ]
 
     let button (text: string) m dispatch =
-        Bulma.button.button [ prop.text text; prop.onClick (fun _ -> m |> dispatch) ]
+        Bulma.button.button [ prop.text text; prop.onClick (fun _ -> m |> dispatch); color.isInfo ]
 
     let renderQuestion question dispatch =
         let (q, answers) = Questions.getQuestion question
@@ -379,12 +379,12 @@ module View =
                         [ Bulma.button.button
                               [ prop.text "Previous question"
                                 prop.onClick (fun _ -> GoBack |> dispatch)
-                                color.isInfo
+                                color.isWarning
                                 prop.disabled (state.History.Count <= 0) ]
                           Bulma.button.button
                               [ prop.text "Restart"
                                 prop.onClick (fun _ -> Restart |> dispatch)
-                                color.isInfo ] ] ] ]
+                                color.isDanger ] ] ] ]
 
     let renderCard state dispatch =
         Bulma.card
