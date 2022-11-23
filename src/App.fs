@@ -377,14 +377,16 @@ module View =
               Bulma.cardFooter
                   [ Bulma.cardFooterItem.div
                         [ Bulma.button.button
-                              [ prop.text "Previous question"
-                                prop.onClick (fun _ -> GoBack |> dispatch)
+                              [ prop.onClick (fun _ -> GoBack |> dispatch)
                                 color.isWarning
-                                prop.disabled (state.History.Count <= 0) ]
+                                prop.disabled (state.History.Count <= 0)
+                                prop.children
+                                    [ Bulma.icon [ Html.i [ prop.className "fas fa-step-backward" ] ]
+                                      Html.span "Previous question" ] ]
                           Bulma.button.button
-                              [ prop.text "Restart"
-                                prop.onClick (fun _ -> Restart |> dispatch)
-                                color.isDanger ] ] ] ]
+                              [ prop.onClick (fun _ -> Restart |> dispatch)
+                                color.isDanger
+                                prop.children [ Bulma.icon [ Html.i [ prop.className "fas fa-sync" ] ]; Html.span "Restart" ] ] ] ] ]
 
     let renderCard state dispatch =
         Bulma.card
