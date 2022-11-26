@@ -49,6 +49,7 @@ module Model =
         | SmallTrianglesOvalsOrRectangles
         | RolledUp
         | Handsized
+        | Round
 
     type Condition =
         | Crunchy
@@ -65,6 +66,7 @@ module Model =
         | Quesadilla
         | Burrito
         | Chimichanga
+        | Tostada
 
     type Question =
         | WhatCondition
@@ -113,7 +115,8 @@ module Questions =
             ("What shape and size?",
              [ ("small triangles, ovals or rectangles", ChooseSizeAndShap SmallTrianglesOvalsOrRectangles)
                ("But I can't tell, it's all rolled up!", ChooseSizeAndShap RolledUp)
-               ("The size of someone's hand I guess.", ChooseSizeAndShap Handsized) ])
+               ("The size of someone's hand I guess.", ChooseSizeAndShap Handsized)
+               ("It's just very, very round", ChooseSizeAndShap Round) ])
         | IsMeatInside ->
             ("Is there meat inside?",
              [ ("Darn tootin'! (Yes)", ChooseFixings Meat)
@@ -178,9 +181,10 @@ module State =
         | HasSauceOnTopIsNext -> Some HasSauceOnTop
         | _ -> None
 
-    let (|ItsNachos|ItsTaquito|ItsTaco|ItsEmptyTacoShell|ItsNone|) model =
+    let (|ItsNachos|ItsTostada|ItsTaquito|ItsTaco|ItsEmptyTacoShell|ItsNone|) model =
         match (model.Condition, model.Folding, model.Fried, model.Fixings, model.SizeAndShape) with
         | (Some Crunchy, None, None, None, Some SmallTrianglesOvalsOrRectangles) -> ItsNachos
+        | (Some Crunchy, None, None, None, Some Round) -> ItsTostada
         | (Some Crunchy, None, None, None, Some RolledUp) -> ItsTaquito
         | (Some Crunchy, None, None, Some fs, Some Handsized) when Fixings.adheresTo fs [ Meat ] -> ItsTaco
         | (Some Soft, Some Roundish, Some false, Some fs, _) when Fixings.adheresTo fs [ Meat; NoRice ] -> ItsTaco
@@ -202,6 +206,7 @@ module State =
     let determineDish model =
         match model with
         | ItsNachos -> Some Nachos
+        | ItsTostada -> Some Tostada
         | ItsTaquito -> Some Taquito
         | ItsTaco -> Some Taco
         | ItsEmptyTacoShell -> Some EmptyTacoShell
@@ -288,6 +293,7 @@ module View =
     let dishInfos dish =
         match dish with
         | Nachos -> ("Nachos", "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Nachos1.jpg/1920px-Nachos1.jpg")
+        | Tostada -> ("Tostada", "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/TostadasTinga.JPG/2880px-TostadasTinga.JPG")
         | Taquito -> ("Taquito", "https://upload.wikimedia.org/wikipedia/commons/8/8b/Flautas_guacamole_tortillas.jpg")
         | Taco ->
             ("Taco",
