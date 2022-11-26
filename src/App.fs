@@ -54,7 +54,7 @@ module Model =
         | Crunchy
         | Soft
 
-    type Comida =
+    type Dish =
         | Nachos
         | Taquito
         | Taco
@@ -83,7 +83,7 @@ module Model =
           Fried: Fried option
           Fixings: Fixings option
           SizeAndShape: SizeAndShape option
-          Comida: Comida option }
+          Dish: Dish option }
 
     type TimelineEntry = { Question: string; Answer: string }
 
@@ -201,7 +201,7 @@ module State =
         | (Some Soft, Some FlatFolded, None, Some fs, None) when Fixings.adheresTo fs [ Meat; NoRice; MeatStrips; NoSauceOnTop ] -> ItsFajita
         | _ -> ItsNone
 
-    let determineComida model =
+    let determineDish model =
         match model with
         | ItsNachos -> Some Nachos
         | ItsTaquito -> Some Taquito
@@ -224,7 +224,7 @@ module State =
                   Fried = None
                   Fixings = None
                   SizeAndShape = None
-                  Comida = None }
+                  Dish = None }
               Timeline = List.empty
               History = Stack<Model>() }
 
@@ -240,7 +240,7 @@ module State =
                 { model with
                     NextQuestion = nextQuestion tortilla
                     Timeline = timelineEntry :: model.Timeline
-                    Tortilla = { tortilla with Comida = determineComida tortilla } }
+                    Tortilla = { tortilla with Dish = determineDish tortilla } }
 
             model'.History.Push(model')
             (model', Cmd.none)
@@ -252,7 +252,7 @@ module State =
                 { model with
                     NextQuestion = nextQuestion tortilla
                     Timeline = timelineEntry :: model.Timeline
-                    Tortilla = { tortilla with Comida = determineComida tortilla } }
+                    Tortilla = { tortilla with Dish = determineDish tortilla } }
 
             model'.History.Push(model')
             (model', Cmd.none)
@@ -269,7 +269,7 @@ module State =
                 { model with
                     NextQuestion = nextQuestion tortilla
                     Timeline = timelineEntry :: model.Timeline
-                    Tortilla = { tortilla with Comida = determineComida tortilla } }
+                    Tortilla = { tortilla with Dish = determineDish tortilla } }
 
             model'.History.Push(model')
             (model', Cmd.none)
@@ -281,7 +281,7 @@ module State =
                 { model with
                     NextQuestion = nextQuestion tortilla
                     Timeline = timelineEntry :: model.Timeline
-                    Tortilla = { tortilla with Comida = determineComida tortilla } }
+                    Tortilla = { tortilla with Dish = determineDish tortilla } }
 
             model'.History.Push(model')
             (model', Cmd.none)
@@ -293,7 +293,7 @@ module State =
                 { model with
                     NextQuestion = nextQuestion tortilla
                     Timeline = timelineEntry :: model.Timeline
-                    Tortilla = { tortilla with Comida = determineComida tortilla } }
+                    Tortilla = { tortilla with Dish = determineDish tortilla } }
 
             model'.History.Push(model')
             (model', Cmd.none)
@@ -314,8 +314,8 @@ module View =
 
     open Model
 
-    let comidaInfos comida =
-        match comida with
+    let dishInfos dish =
+        match dish with
         | Nachos -> ("Nachos", "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Nachos1.jpg/1920px-Nachos1.jpg")
         | Taquito -> ("Taquito", "https://upload.wikimedia.org/wikipedia/commons/8/8b/Flautas_guacamole_tortillas.jpg")
         | Taco ->
@@ -333,8 +333,8 @@ module View =
         | Burrito -> ("Burrito", "https://upload.wikimedia.org/wikipedia/commons/1/17/Shredded_pork_burrito.jpg")
         | Chimichanga -> ("Chimichanga", "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Chimichangas.jpg/1920px-Chimichangas.jpg")
 
-    let renderResult comida =
-        let (name, url) = comidaInfos comida
+    let renderResult dish =
+        let (name, url) = dishInfos dish
 
         Bulma.box
             [ prop.className "result"
@@ -342,7 +342,7 @@ module View =
                   [ Bulma.columns
                         [ Bulma.column
                               [ Html.p "You end up with:"
-                                Html.p [ prop.className "comida"; prop.text name ]
+                                Html.p [ prop.className "dish"; prop.text name ]
                                 Html.p "Buen provecho :)" ]
                           Bulma.column [ Html.img [ prop.src url ] ] ] ] ]
 
@@ -368,8 +368,8 @@ module View =
     let renderLeft state dispatch =
         Bulma.card
             [ Bulma.cardContent
-                  [ if Option.isSome state.Tortilla.Comida then
-                        renderResult state.Tortilla.Comida.Value
+                  [ if Option.isSome state.Tortilla.Dish then
+                        renderResult state.Tortilla.Dish.Value
                     else if Option.isSome state.NextQuestion then
                         renderQuestion state.NextQuestion.Value dispatch
                     else
