@@ -4,12 +4,6 @@ module Model =
 
     open System.Collections.Generic
 
-    type Folding =
-        | Roundish
-        | FlatFolded
-
-    type Fried = bool
-
     type Feature =
         | Empty
         | Meat
@@ -44,6 +38,12 @@ module Model =
             match fixings with
             | Features fs when fs = Set.ofList wanted -> true
             | _ -> false
+
+    type Folding =
+        | Roundish
+        | FlatFolded
+
+    type Fried = bool
 
     type SizeAndShape =
         | SmallTrianglesOvalsOrRectangles
