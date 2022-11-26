@@ -147,37 +147,35 @@ module State =
 
     open Model
 
-    let (|ConditionChoiceNeeded|SizeAndShapeChoiceNeeded|MeatInsideChoiceNeeded|NoQuestionLeft|) model =
+    let (|WhatConditionIsNext|WhatSizeAndShapeIsNext|IsMeatInsideIsNext|NoQuestionLeft|) model =
         match (model.Condition, model.SizeAndShape, model.Fixings, model.Folding, model.Fried) with
-        | (None, None, None, None, None) -> ConditionChoiceNeeded
-        | (Some Crunchy, None, None, None, None) -> SizeAndShapeChoiceNeeded
-        | (Some Crunchy, Some Handsized, None, None, None) -> MeatInsideChoiceNeeded
+        | (None, None, None, None, None) -> WhatConditionIsNext
+        | (Some Crunchy, None, None, None, None) -> WhatSizeAndShapeIsNext
+        | (Some Crunchy, Some Handsized, None, None, None) -> IsMeatInsideIsNext
         | _ -> NoQuestionLeft
 
-    let (|WhatsInsideChoiceNeeded|AnyRiceChoiceNeeded|FriedChoiceNeeded|FoldingChoiceNeeded|StripsOfMeatChoiceNeeded|SauceChoiceNeeded|NoQuestionLeft|)
-        model
-        =
+    let (|WhatsInsideIsNext|AnyRiceIsNext|IsFriedIsNext|WhatFoldingIsNext|HasStripsOfMeatIsNext|HasSauceOnTopIsNext|NoQuestionLeft|) model =
         match (model.Condition, model.SizeAndShape, model.Fixings, model.Folding, model.Fried) with
-        | (Some Soft, None, None, None, None) -> WhatsInsideChoiceNeeded
-        | (Some Soft, None, Some fs, None, None) when Fixings.adheresTo fs [ Meat ] -> AnyRiceChoiceNeeded
-        | (Some Soft, None, Some fs, None, None) when Fixings.adheresTo fs [ Meat; Rice ] -> FriedChoiceNeeded
-        | (Some Soft, None, Some fs, Some Roundish, None) when Fixings.adheresTo fs [ Meat; NoRice ] -> FriedChoiceNeeded
-        | (Some Soft, None, Some fs, None, None) when Fixings.adheresTo fs [ Meat; NoRice ] -> FoldingChoiceNeeded
-        | (Some Soft, None, Some fs, Some FlatFolded, None) when Fixings.adheresTo fs [ Meat; NoRice ] -> StripsOfMeatChoiceNeeded
-        | (Some Soft, None, Some fs, Some FlatFolded, None) when Fixings.adheresTo fs [ Meat; NoRice; MeatStrips ] -> SauceChoiceNeeded
+        | (Some Soft, None, None, None, None) -> WhatsInsideIsNext
+        | (Some Soft, None, Some fs, None, None) when Fixings.adheresTo fs [ Meat ] -> AnyRiceIsNext
+        | (Some Soft, None, Some fs, None, None) when Fixings.adheresTo fs [ Meat; Rice ] -> IsFriedIsNext
+        | (Some Soft, None, Some fs, Some Roundish, None) when Fixings.adheresTo fs [ Meat; NoRice ] -> IsFriedIsNext
+        | (Some Soft, None, Some fs, None, None) when Fixings.adheresTo fs [ Meat; NoRice ] -> WhatFoldingIsNext
+        | (Some Soft, None, Some fs, Some FlatFolded, None) when Fixings.adheresTo fs [ Meat; NoRice ] -> HasStripsOfMeatIsNext
+        | (Some Soft, None, Some fs, Some FlatFolded, None) when Fixings.adheresTo fs [ Meat; NoRice; MeatStrips ] -> HasSauceOnTopIsNext
         | _ -> NoQuestionLeft
 
     let nextQuestion tortilla =
         match tortilla with
-        | ConditionChoiceNeeded -> Some WhatCondition
-        | SizeAndShapeChoiceNeeded -> Some WhatShapeAndSize
-        | MeatInsideChoiceNeeded -> Some IsMeatInside
-        | WhatsInsideChoiceNeeded -> Some WhatsInside
-        | AnyRiceChoiceNeeded -> Some AnyRice
-        | FriedChoiceNeeded -> Some IsFried
-        | FoldingChoiceNeeded -> Some WhatFolding
-        | StripsOfMeatChoiceNeeded -> Some HasStripsOfMeat
-        | SauceChoiceNeeded -> Some HasSauceOnTop
+        | WhatConditionIsNext -> Some WhatCondition
+        | WhatSizeAndShapeIsNext -> Some WhatShapeAndSize
+        | IsMeatInsideIsNext -> Some IsMeatInside
+        | WhatsInsideIsNext -> Some WhatsInside
+        | AnyRiceIsNext -> Some AnyRice
+        | IsFriedIsNext -> Some IsFried
+        | WhatFoldingIsNext -> Some WhatFolding
+        | HasStripsOfMeatIsNext -> Some HasStripsOfMeat
+        | HasSauceOnTopIsNext -> Some HasSauceOnTop
         | _ -> None
 
     let (|ItsNachos|ItsTaquito|ItsTaco|ItsEmptyTacoShell|ItsNone|) model =
