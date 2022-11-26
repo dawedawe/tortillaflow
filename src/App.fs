@@ -230,31 +230,28 @@ module State =
 
         (model, Cmd.none)
 
+    let updateModel msg model f =
+        let tortilla = f model.Tortilla
+        let timelineEntry = Questions.getTimelineEntryForMsg model.NextQuestion.Value msg
+
+        let model' =
+            { model with
+                NextQuestion = nextQuestion tortilla
+                Timeline = timelineEntry :: model.Timeline
+                Tortilla = { tortilla with Dish = determineDish tortilla } }
+
+        model'.History.Push(model')
+        model'
+
     let update (msg: Msg) (model: Model) =
         match msg with
         | ChooseCondition c ->
-            let tortilla = { model.Tortilla with Condition = Some c }
-            let timelineEntry = Questions.getTimelineEntryForMsg model.NextQuestion.Value msg
-
-            let model' =
-                { model with
-                    NextQuestion = nextQuestion tortilla
-                    Timeline = timelineEntry :: model.Timeline
-                    Tortilla = { tortilla with Dish = determineDish tortilla } }
-
-            model'.History.Push(model')
+            let f = fun t -> { t with Condition = Some c }
+            let model' = updateModel msg model f
             (model', Cmd.none)
         | ChooseSizeAndShap s ->
-            let tortilla = { model.Tortilla with SizeAndShape = Some s }
-            let timelineEntry = Questions.getTimelineEntryForMsg model.NextQuestion.Value msg
-
-            let model' =
-                { model with
-                    NextQuestion = nextQuestion tortilla
-                    Timeline = timelineEntry :: model.Timeline
-                    Tortilla = { tortilla with Dish = determineDish tortilla } }
-
-            model'.History.Push(model')
+            let f = fun t -> { t with SizeAndShape = Some s }
+            let model' = updateModel msg model f
             (model', Cmd.none)
         | ChooseFixings x ->
             let fixings' =
@@ -262,40 +259,16 @@ module State =
                 | None -> Fixings.add Fixings.Create x
                 | Some fs -> Fixings.add fs x
 
-            let tortilla = { model.Tortilla with Fixings = Some fixings' }
-            let timelineEntry = Questions.getTimelineEntryForMsg model.NextQuestion.Value msg
-
-            let model' =
-                { model with
-                    NextQuestion = nextQuestion tortilla
-                    Timeline = timelineEntry :: model.Timeline
-                    Tortilla = { tortilla with Dish = determineDish tortilla } }
-
-            model'.History.Push(model')
+            let f = fun t -> { t with Fixings = Some fixings' }
+            let model' = updateModel msg model f
             (model', Cmd.none)
         | ChooseIsFried b ->
-            let tortilla = { model.Tortilla with Fried = Some b }
-            let timelineEntry = Questions.getTimelineEntryForMsg model.NextQuestion.Value msg
-
-            let model' =
-                { model with
-                    NextQuestion = nextQuestion tortilla
-                    Timeline = timelineEntry :: model.Timeline
-                    Tortilla = { tortilla with Dish = determineDish tortilla } }
-
-            model'.History.Push(model')
+            let f = fun t -> { t with Fried = Some b }
+            let model' = updateModel msg model f
             (model', Cmd.none)
-        | ChooseFolding f ->
-            let tortilla = { model.Tortilla with Folding = Some f }
-            let timelineEntry = Questions.getTimelineEntryForMsg model.NextQuestion.Value msg
-
-            let model' =
-                { model with
-                    NextQuestion = nextQuestion tortilla
-                    Timeline = timelineEntry :: model.Timeline
-                    Tortilla = { tortilla with Dish = determineDish tortilla } }
-
-            model'.History.Push(model')
+        | ChooseFolding x ->
+            let f = fun t -> { t with Folding = Some x }
+            let model' = updateModel msg model f
             (model', Cmd.none)
         | Restart -> init ()
         | GoBack ->
