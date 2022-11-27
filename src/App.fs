@@ -546,35 +546,34 @@ module View =
                         [ Bulma.column [ renderLeft state dispatch ]
                           Bulma.column [ renderTimeline state.Language state.Timeline ] ] ] ]
 
+    let languaMenu dispatch =
+
+        let setLang lang =
+            match lang with
+            | "Es" -> ChooseLanguage Spanish |> dispatch
+            | _ -> ChooseLanguage English |> dispatch
+
+        Bulma.field.div
+            [ prop.id "language-dropdown"
+              prop.children
+                  [ Bulma.control.p
+                        [ control.hasIconsLeft
+                          prop.onChange setLang
+                          prop.children
+                              [ Bulma.select
+                                    [ Html.option [ prop.value "En"; prop.text "En" ]
+                                      Html.option [ prop.value "Es"; prop.text "Es" ] ]
+                                Bulma.icon
+                                    [ icon.isSmall
+                                      icon.isLeft
+                                      prop.children [ Html.i [ prop.className "fas fa-globe" ] ] ] ] ] ] ]
+
     [<ReactComponent>]
     let ViewComp () =
 
         let state, dispatch = React.useElmish (State.init, State.update, [||])
 
-        let languaMenu =
-            Bulma.field.div
-                [ prop.id "language-dropdown"
-                  prop.children
-                      [ Bulma.control.p
-                            [ control.hasIconsLeft
-                              prop.children
-                                  [ Bulma.select
-                                        [ Html.option
-                                              [ prop.value "En"
-                                                prop.text "En"
-                                                prop.onClick (fun _ -> ChooseLanguage English |> dispatch) ]
-                                          Html.option
-                                              [ prop.value "Es"
-                                                prop.text "Es"
-                                                prop.onClick (fun _ -> ChooseLanguage Spanish |> dispatch) ] ]
-                                    Bulma.icon
-                                        [ icon.isSmall
-                                          icon.isLeft
-                                          prop.children [ Html.i [ prop.className "fas fa-globe" ] ] ] ] ]
-
-                        ] ]
-
-        [ Bulma.title "Tortilla flow"; languaMenu; renderCard state dispatch ]
+        [ Bulma.title "Tortilla flow"; languaMenu dispatch; renderCard state dispatch ]
         |> Html.div
 
 open Browser.Dom
