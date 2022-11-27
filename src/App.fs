@@ -89,11 +89,16 @@ module Model =
 
     type TimelineEntry = { Question: string; Answer: string }
 
+    type Language =
+        | English
+        | Spanish
+
     type Model =
         { NextQuestion: Question option
           Tortilla: Tortilla
           Timeline: TimelineEntry list
-          History: Stack<Model> }
+          History: Stack<Model>
+          Language: Language }
 
     type Msg =
         | ChooseCondition of Condition
@@ -103,43 +108,198 @@ module Model =
         | ChooseFolding of Folding
         | Restart
         | GoBack
+        | ChooseLanguage of Language
+
+module I18n =
+
+    open Model
+
+    [<RequireQualifiedAccess>]
+    type AppStrings =
+        | PrevQuestion
+        | Restart
+        | Result
+        | Choices
+
+    let translate (language: Language) (displayString: AppStrings) =
+        match (language, displayString) with
+        | (English, AppStrings.PrevQuestion) -> "Previous question"
+        | (English, AppStrings.Restart) -> "Restart"
+        | (English, AppStrings.Result) -> "You end up with"
+        | (English, AppStrings.Choices) -> "Your choices"
+        | (Spanish, AppStrings.PrevQuestion) -> "Pregunta anterior"
+        | (Spanish, AppStrings.Restart) -> "Reiniciar"
+        | (Spanish, AppStrings.Result) -> "Tu tortilla es"
+        | (Spanish, AppStrings.Choices) -> "Tus elecciones"
+
+    let translateQuestion lang q =
+        match lang with
+        | English ->
+            match q with
+            | WhatCondition -> "What is your tortilla like?"
+            | WhatShapeAndSize -> "What shape and size?"
+            | IsMeatInside -> "Is there meat inside?"
+            | WhatsInside -> "What's inside?"
+            | AnyRice -> "Any rice?"
+            | IsFried -> "Is it fried?"
+            | WhatFolding -> "How is it folded?"
+            | HasStripsOfMeat -> "Strips of meat?"
+            | HasSauceOnTop -> "Sauce on top?"
+        | Spanish ->
+            match q with
+            | WhatCondition -> "¿Cómo es su tortilla?"
+            | WhatShapeAndSize -> "¿Qué forma y tamaño?"
+            | IsMeatInside -> "¿Hay carne adentro?"
+            | WhatsInside -> "¿Qué hay adentro?"
+            | AnyRice -> "¿Hay arroz?"
+            | IsFried -> "¿Está frito?"
+            | WhatFolding -> "¿Cómo se dobla?"
+            | HasStripsOfMeat -> "¿Tiene tiras de carne?"
+            | HasSauceOnTop -> "¿Tiene salsa encima?"
+
+    let translateAnswer lang q a =
+        match a with
+        | ChooseCondition c ->
+            match lang with
+            | English ->
+                match c with
+                | Crunchy -> "crunchy"
+                | Soft -> "soft"
+            | Spanish ->
+                match c with
+                | Crunchy -> "crujiente"
+                | Soft -> "suave"
+        | ChooseSizeAndShap s ->
+            match lang with
+            | English ->
+                match s with
+                | SmallTrianglesOvalsOrRectangles -> "small triangles, ovals or rectangles"
+                | RolledUp -> "But I can't tell, it's all rolled up!"
+                | Handsized -> "The size of someone's hand I guess."
+                | Round -> "It's just very, very round"
+            | Spanish ->
+                match s with
+                | SmallTrianglesOvalsOrRectangles -> "Triángulos, ovals o rectángulos pequeños"
+                | RolledUp -> "Pero no puedo decirlo, está todo enrollado!"
+                | Handsized -> "El tamaño de la mano de alguien, supongo."
+                | Round -> "Es muy, muy redondo"
+        | ChooseFixings f ->
+            match lang with
+            | English ->
+                match f with
+                | Empty -> "No. It's empty."
+                | Meat when q = IsMeatInside -> "Darn tootin'! (Yes)"
+                | Meat -> "Mostly meat"
+                | MeatStrips -> "yeah, actually"
+                | NoMeatStrips -> "no"
+                | Cheese -> "mostly cheese"
+                | Rice -> "yup"
+                | NoRice -> "negative"
+                | Soup -> "This is a SOUP!"
+                | SauceOnTop -> "yes"
+                | NoSauceOnTop -> "no"
+            | Spanish ->
+                match f with
+                | Empty -> "No. Está vacío."
+                | Meat -> "Mayormente carne"
+                | MeatStrips -> "Sí, en realidad"
+                | NoMeatStrips -> "no"
+                | Cheese -> "Mayormente queso"
+                | Rice -> "sí"
+                | NoRice -> "negativo"
+                | Soup -> "¡Esto es una SOPA!"
+                | SauceOnTop -> "sí"
+                | NoSauceOnTop -> "no"
+        | ChooseIsFried f ->
+            match lang with
+            | English ->
+                match f with
+                | true -> "yes"
+                | false -> "gross. no."
+            | Spanish ->
+                match f with
+                | true -> "sí"
+                | false -> "no"
+        | ChooseFolding f ->
+            match lang with
+            | English ->
+                match f with
+                | Roundish -> "round-ish"
+                | FlatFolded -> "flat, folded in half"
+            | Spanish ->
+                match f with
+                | Roundish -> "redondo"
+                | FlatFolded -> "plana, doblada por la mitad"
+        | _ -> failwith "Not implemented"
 
 module Questions =
 
     open Model
 
-    let getQuestion q =
-        match q with
-        | WhatCondition -> ("What is your tortilla like?", [ ("soft", ChooseCondition Soft); ("crunchy", ChooseCondition Crunchy) ])
-        | WhatShapeAndSize ->
-            ("What shape and size?",
-             [ ("small triangles, ovals or rectangles", ChooseSizeAndShap SmallTrianglesOvalsOrRectangles)
-               ("But I can't tell, it's all rolled up!", ChooseSizeAndShap RolledUp)
-               ("The size of someone's hand I guess.", ChooseSizeAndShap Handsized)
-               ("It's just very, very round", ChooseSizeAndShap Round) ])
-        | IsMeatInside ->
-            ("Is there meat inside?",
-             [ ("Darn tootin'! (Yes)", ChooseFixings Meat)
-               ("No. It's empty.", ChooseFixings Empty) ])
-        | WhatsInside ->
-            ("What's inside?",
-             [ ("mostly meat", ChooseFixings Meat)
-               ("mostly cheese", ChooseFixings Cheese)
-               ("This is a SOUP!", ChooseFixings Soup) ])
-        | AnyRice -> ("Any rice?", [ ("yup", ChooseFixings Rice); ("negative", ChooseFixings NoRice) ])
-        | IsFried -> ("Is it fried?", [ ("yes", ChooseIsFried true); ("gross. no.", ChooseIsFried false) ])
-        | WhatFolding ->
-            ("How is it folded?",
-             [ ("round-ish", ChooseFolding Roundish)
-               ("flat, folded in half", ChooseFolding FlatFolded) ])
-        | HasStripsOfMeat ->
-            ("Strips of meat?",
-             [ ("no", ChooseFixings NoMeatStrips)
-               ("yeah, actually", ChooseFixings MeatStrips) ])
-        | HasSauceOnTop -> ("Sauce on top?", [ ("no", ChooseFixings NoSauceOnTop); ("yes", ChooseFixings SauceOnTop) ])
+    let getQuestion lang q =
+        let translatedQ = I18n.translateQuestion lang q
 
-    let getTimelineEntryForMsg question msg =
-        let q, answers = getQuestion question
+        match q with
+        | WhatCondition ->
+            let answers =
+                [ ChooseCondition Soft; ChooseCondition Crunchy ]
+                |> List.map (fun a -> (I18n.translateAnswer lang q a, a))
+
+            (translatedQ, answers)
+        | WhatShapeAndSize ->
+            let answers =
+                [ ChooseSizeAndShap SmallTrianglesOvalsOrRectangles
+                  ChooseSizeAndShap RolledUp
+                  ChooseSizeAndShap Handsized
+                  ChooseSizeAndShap Round ]
+                |> List.map (fun a -> (I18n.translateAnswer lang q a, a))
+
+            (translatedQ, answers)
+        | IsMeatInside ->
+            let answers =
+                [ ChooseFixings Meat; ChooseFixings Empty ]
+                |> List.map (fun a -> (I18n.translateAnswer lang q a, a))
+
+            (translatedQ, answers)
+        | WhatsInside ->
+            let answers =
+                [ ChooseFixings Meat; ChooseFixings Cheese; ChooseFixings Soup ]
+                |> List.map (fun a -> (I18n.translateAnswer lang q a, a))
+
+            (translatedQ, answers)
+        | AnyRice ->
+            let answers =
+                [ ChooseFixings Rice; ChooseFixings NoRice ]
+                |> List.map (fun a -> (I18n.translateAnswer lang q a, a))
+
+            (translatedQ, answers)
+        | IsFried ->
+            let answers =
+                [ ChooseIsFried true; ChooseIsFried false ]
+                |> List.map (fun a -> (I18n.translateAnswer lang q a, a))
+
+            (translatedQ, answers)
+        | WhatFolding ->
+            let answers =
+                [ ChooseFolding Roundish; ChooseFolding FlatFolded ]
+                |> List.map (fun a -> (I18n.translateAnswer lang q a, a))
+
+            (translatedQ, answers)
+        | HasStripsOfMeat ->
+            let answers =
+                [ ChooseFixings NoMeatStrips; ChooseFixings MeatStrips ]
+                |> List.map (fun a -> (I18n.translateAnswer lang q a, a))
+
+            (translatedQ, answers)
+        | HasSauceOnTop ->
+            let answers =
+                [ ChooseFixings NoSauceOnTop; ChooseFixings SauceOnTop ]
+                |> List.map (fun a -> (I18n.translateAnswer lang q a, a))
+
+            (translatedQ, answers)
+
+    let getTimelineEntryForMsg lang question msg =
+        let q, answers = getQuestion lang question
         let a = answers |> List.find (fun (_, aMsg) -> aMsg = msg) |> fst
         { Question = q; Answer = a }
 
@@ -229,13 +389,21 @@ module State =
                   SizeAndShape = None
                   Dish = None }
               Timeline = List.empty
-              History = Stack<Model>() }
+              History = Stack<Model>()
+              Language = English }
 
         (model, Cmd.none)
 
+    let initWithLang lang =
+        let (model, cmd) = init ()
+        let model' = { model with Language = lang }
+        (model', cmd)
+
     let updateModel msg model f =
         let tortilla = f model.Tortilla
-        let timelineEntry = Questions.getTimelineEntryForMsg model.NextQuestion.Value msg
+
+        let timelineEntry =
+            Questions.getTimelineEntryForMsg model.Language model.NextQuestion.Value msg
 
         let model' =
             { model with
@@ -273,14 +441,17 @@ module State =
             let f = fun t -> { t with Folding = Some x }
             let model' = updateModel msg model f
             (model', Cmd.none)
-        | Restart -> init ()
+        | Restart -> initWithLang model.Language
         | GoBack ->
             if model.History.Count >= 2 then
                 model.History.Pop() |> ignore
                 let currentModel = model.History.Peek()
                 (currentModel, Cmd.none)
             else
-                init ()
+                initWithLang model.Language
+        | ChooseLanguage lang ->
+            let model' = { model with Language = lang }
+            (model', Cmd.none)
 
 module View =
 
@@ -289,6 +460,7 @@ module View =
     open Feliz.UseElmish
 
     open Model
+    open I18n
 
     let dishInfos dish =
         match dish with
@@ -310,7 +482,7 @@ module View =
         | Burrito -> ("Burrito", "https://upload.wikimedia.org/wikipedia/commons/1/17/Shredded_pork_burrito.jpg")
         | Chimichanga -> ("Chimichanga", "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Chimichangas.jpg/1920px-Chimichangas.jpg")
 
-    let renderResult dish =
+    let renderResult lang dish =
         let (name, url) = dishInfos dish
 
         Bulma.box
@@ -318,7 +490,7 @@ module View =
               prop.children
                   [ Bulma.columns
                         [ Bulma.column
-                              [ Html.p "You end up with:"
+                              [ Html.p (translate lang AppStrings.Result)
                                 Html.p [ prop.className "dish"; prop.text name ]
                                 Html.p "Buen provecho :)" ]
                           Bulma.column [ Html.img [ prop.src url ] ] ] ] ]
@@ -326,17 +498,17 @@ module View =
     let button (text: string) m dispatch =
         Bulma.button.button [ prop.text text; prop.onClick (fun _ -> m |> dispatch); color.isInfo ]
 
-    let renderQuestion question dispatch =
-        let (q, answers) = Questions.getQuestion question
+    let renderQuestion lang question dispatch =
+        let (q, answers) = Questions.getQuestion lang question
 
         Html.div
             [ Html.div [ Html.strong q ]
               for (a, aMsg) in answers do
                   button a aMsg dispatch ]
 
-    let renderTimeline entries =
+    let renderTimeline lang entries =
         Bulma.box
-            [ Html.strong "Your choices"
+            [ Html.strong (translate lang AppStrings.Choices)
               Html.unorderedList
                   [ for e in entries do
                         Html.listItem [ Html.p $"{e.Question}"; Html.strong $"{e.Answer}" ]
@@ -346,9 +518,9 @@ module View =
         Bulma.card
             [ Bulma.cardContent
                   [ if Option.isSome state.Tortilla.Dish then
-                        renderResult state.Tortilla.Dish.Value
+                        renderResult state.Language state.Tortilla.Dish.Value
                     else if Option.isSome state.NextQuestion then
-                        renderQuestion state.NextQuestion.Value dispatch
+                        renderQuestion state.Language state.NextQuestion.Value dispatch
                     else
                         () ]
               Bulma.cardFooter
@@ -359,25 +531,51 @@ module View =
                                 prop.disabled (state.History.Count <= 0)
                                 prop.children
                                     [ Bulma.icon [ Html.i [ prop.className "fas fa-step-backward" ] ]
-                                      Html.span "Previous question" ] ]
+                                      Html.span (translate state.Language AppStrings.PrevQuestion) ] ]
                           Bulma.button.button
                               [ prop.onClick (fun _ -> Restart |> dispatch)
                                 color.isDanger
-                                prop.children [ Bulma.icon [ Html.i [ prop.className "fas fa-sync" ] ]; Html.span "Restart" ] ] ] ] ]
+                                prop.children
+                                    [ Bulma.icon [ Html.i [ prop.className "fas fa-sync" ] ]
+                                      Html.span (translate state.Language AppStrings.Restart) ] ] ] ] ]
 
     let renderCard state dispatch =
         Bulma.card
             [ Bulma.cardContent
                   [ Bulma.columns
                         [ Bulma.column [ renderLeft state dispatch ]
-                          Bulma.column [ renderTimeline state.Timeline ] ] ] ]
+                          Bulma.column [ renderTimeline state.Language state.Timeline ] ] ] ]
 
     [<ReactComponent>]
     let ViewComp () =
 
         let state, dispatch = React.useElmish (State.init, State.update, [||])
 
-        [ Bulma.title "Tortilla flow"; renderCard state dispatch ] |> Html.div
+        let languaMenu =
+            Bulma.field.div
+                [ prop.id "language-dropdown"
+                  prop.children
+                      [ Bulma.control.p
+                            [ control.hasIconsLeft
+                              prop.children
+                                  [ Bulma.select
+                                        [ Html.option
+                                              [ prop.value "En"
+                                                prop.text "En"
+                                                prop.onClick (fun _ -> ChooseLanguage English |> dispatch) ]
+                                          Html.option
+                                              [ prop.value "Es"
+                                                prop.text "Es"
+                                                prop.onClick (fun _ -> ChooseLanguage Spanish |> dispatch) ] ]
+                                    Bulma.icon
+                                        [ icon.isSmall
+                                          icon.isLeft
+                                          prop.children [ Html.i [ prop.className "fas fa-globe" ] ] ] ] ]
+
+                        ] ]
+
+        [ Bulma.title "Tortilla flow"; languaMenu; renderCard state dispatch ]
+        |> Html.div
 
 open Browser.Dom
 open View
