@@ -201,6 +201,7 @@ module I18n =
             | Spanish ->
                 match f with
                 | Empty -> "No. Está vacío."
+                | Meat when q = IsMeatInside -> "Oh SI!"
                 | Meat -> "Mayormente carne"
                 | MeatStrips -> "Sí, en realidad"
                 | NoMeatStrips -> "no"
