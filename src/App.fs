@@ -557,7 +557,7 @@ module View =
         Bulma.field.div
             [ prop.id "language-dropdown"
               prop.children
-                  [ Bulma.control.p
+                  [ Bulma.control.div
                         [ control.hasIconsLeft
                           prop.onChange setLang
                           prop.children
@@ -569,13 +569,19 @@ module View =
                                       icon.isLeft
                                       prop.children [ Html.i [ prop.className "fas fa-globe" ] ] ] ] ] ] ]
 
+    let navbar dispatch =
+        Bulma.navbar
+            [ Bulma.color.isInfo
+              prop.children
+                  [ Bulma.navbarBrand.div [ Bulma.navbarItem.div [ Html.strong "Tortilla Flow" ] ]
+                    languaMenu dispatch ] ]
+
     [<ReactComponent>]
     let ViewComp () =
 
         let state, dispatch = React.useElmish (State.init, State.update, [||])
 
-        [ Bulma.title "Tortilla flow"; languaMenu dispatch; renderCard state dispatch ]
-        |> Html.div
+        [ navbar dispatch; renderCard state dispatch ] |> Html.div
 
 open Browser.Dom
 open View
