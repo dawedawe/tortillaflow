@@ -115,22 +115,22 @@ module I18n =
     open Model
 
     [<RequireQualifiedAccess>]
-    type AppStrings =
+    type AppString =
         | PrevQuestion
         | Restart
         | Result
         | Choices
 
-    let translate (language: Language) (displayString: AppStrings) =
-        match (language, displayString) with
-        | (English, AppStrings.PrevQuestion) -> "Previous question"
-        | (English, AppStrings.Restart) -> "Restart"
-        | (English, AppStrings.Result) -> "You end up with"
-        | (English, AppStrings.Choices) -> "Your choices"
-        | (Spanish, AppStrings.PrevQuestion) -> "Pregunta anterior"
-        | (Spanish, AppStrings.Restart) -> "Reiniciar"
-        | (Spanish, AppStrings.Result) -> "Tu tortilla es"
-        | (Spanish, AppStrings.Choices) -> "Tus elecciones"
+    let translate (language: Language) (s: AppString) =
+        match (language, s) with
+        | (English, AppString.PrevQuestion) -> "Previous question"
+        | (English, AppString.Restart) -> "Restart"
+        | (English, AppString.Result) -> "You end up with"
+        | (English, AppString.Choices) -> "Your choices"
+        | (Spanish, AppString.PrevQuestion) -> "Pregunta anterior"
+        | (Spanish, AppString.Restart) -> "Reiniciar"
+        | (Spanish, AppString.Result) -> "Tu tortilla es"
+        | (Spanish, AppString.Choices) -> "Tus elecciones"
 
     let translateQuestion lang q =
         match lang with
@@ -298,7 +298,7 @@ module Questions =
 
             (translatedQ, answers)
 
-    let getTimelineEntryForMsg lang question msg =
+    let getTimelineEntry lang question msg =
         let q, answers = getQuestion lang question
         let a = answers |> List.find (fun (_, aMsg) -> aMsg = msg) |> fst
         { Question = q; Answer = a }
@@ -403,7 +403,7 @@ module State =
         let tortilla = f model.Tortilla
 
         let timelineEntry =
-            Questions.getTimelineEntryForMsg model.Language model.NextQuestion.Value msg
+            Questions.getTimelineEntry model.Language model.NextQuestion.Value msg
 
         let model' =
             { model with
@@ -490,7 +490,7 @@ module View =
               prop.children
                   [ Bulma.columns
                         [ Bulma.column
-                              [ Html.p (translate lang AppStrings.Result)
+                              [ Html.p (translate lang AppString.Result)
                                 Html.p [ prop.className "dish"; prop.text name ]
                                 Html.p "Buen provecho :)" ]
                           Bulma.column [ Html.img [ prop.src url ] ] ] ] ]
@@ -508,13 +508,13 @@ module View =
 
     let renderTimeline lang entries =
         Bulma.box
-            [ Html.strong (translate lang AppStrings.Choices)
+            [ Html.strong (translate lang AppString.Choices)
               Html.unorderedList
                   [ for e in entries do
                         Html.listItem [ Html.p $"{e.Question}"; Html.strong $"{e.Answer}" ]
                         Html.br [] ] ]
 
-    let renderLeft state dispatch =
+    let renderQnA state dispatch =
         Bulma.card
             [ Bulma.cardContent
                   [ if Option.isSome state.Tortilla.Dish then
@@ -531,19 +531,19 @@ module View =
                                 prop.disabled (state.History.Count <= 0)
                                 prop.children
                                     [ Bulma.icon [ Html.i [ prop.className "fas fa-step-backward" ] ]
-                                      Html.span (translate state.Language AppStrings.PrevQuestion) ] ]
+                                      Html.span (translate state.Language AppString.PrevQuestion) ] ]
                           Bulma.button.button
                               [ prop.onClick (fun _ -> Restart |> dispatch)
                                 color.isDanger
                                 prop.children
                                     [ Bulma.icon [ Html.i [ prop.className "fas fa-sync" ] ]
-                                      Html.span (translate state.Language AppStrings.Restart) ] ] ] ] ]
+                                      Html.span (translate state.Language AppString.Restart) ] ] ] ] ]
 
     let renderCard state dispatch =
         Bulma.card
             [ Bulma.cardContent
                   [ Bulma.columns
-                        [ Bulma.column [ renderLeft state dispatch ]
+                        [ Bulma.column [ renderQnA state dispatch ]
                           Bulma.column [ renderTimeline state.Language state.Timeline ] ] ] ]
 
     let languaMenu dispatch =
