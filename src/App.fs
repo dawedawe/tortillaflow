@@ -168,7 +168,7 @@ module I18n =
             | Spanish ->
                 match c with
                 | Crunchy -> "crujiente"
-                | Soft -> "suave"
+                | Soft -> "blanda"
         | ChooseSizeAndShap s ->
             match lang with
             | English ->
