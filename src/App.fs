@@ -192,7 +192,7 @@ module I18n =
                 | Meat -> "Mostly meat"
                 | MeatStrips -> "yeah, actually"
                 | NoMeatStrips -> "no"
-                | Cheese -> "mostly cheese"
+                | Cheese -> "Mostly cheese"
                 | Rice -> "yup"
                 | NoRice -> "negative"
                 | Soup -> "This is a SOUP!"
